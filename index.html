@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gigi</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<header id="header">
+  <span id="title">Gigi</span>
+  <span id="guess-counter">0 / 7</span>
+  <span id="header-right">
+    <span id="level-pill">Level 1</span>
+    <button id="info-btn" aria-label="How to play">ℹ</button>
+  </span>
+</header>
+
+<!-- ── Gigi zone ──────────────────────────────────────── -->
+<section id="gigi-zone">
+  <div id="gigi-avatar">🧋</div>
+  <div id="speech-bubble" class="hidden"></div>
+</section>
+
+<!-- ── Main area ──────────────────────────────────────── -->
+<main id="main">
+
+  <!-- Left: selectors -->
+  <div id="selectors-col">
+    <p class="section-label">Make Gigi's drink</p>
+
+    <div id="selector-tea"    class="selector-row" data-cat="tea"></div>
+    <div id="selector-milk"   class="selector-row" data-cat="milk"></div>
+    <div id="selector-syrup"  class="selector-row" data-cat="syrup"></div>
+    <div id="selector-sugar"  class="selector-row" data-cat="sugar"></div>
+    <div id="selector-ice"    class="selector-row" data-cat="ice"></div>
+    <div id="selector-toppings" class="selector-row" data-cat="toppings"></div>
+
+    <div id="validation-error" class="hidden"></div>
+    <button id="submit-btn" disabled>Serve to Gigi</button>
+  </div>
+
+  <!-- Right: live cup -->
+  <div id="cup-col">
+    <div id="cup-wrap">
+      <div id="cup">
+        <div id="cup-ice"></div>
+        <div id="cup-syrup-tint"></div>
+        <div id="cup-tea"></div>
+        <div id="cup-milk"></div>
+        <div id="cup-toppings"></div>
+      </div>
+      <div id="cup-sugar-label"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Guess history ──────────────────────────────────── -->
+<section id="history">
+  <div id="history-headers" class="hidden">
+    <span>Tea</span><span>Milk</span><span>Syrup</span>
+    <span>Sugar</span><span>Ice</span><span id="topping-header-cell">Topping</span>
+  </div>
+  <div id="history-rows"></div>
+</section>
+
+<!-- ── Legend overlay ────────────────────────────────── -->
+<div id="legend-overlay" class="overlay hidden">
+  <div class="overlay-box">
+    <h2>How to play</h2>
+    <p>Guess Gigi's secret bubble tea recipe. Submit a full recipe and get clues for every ingredient.</p>
+
+    <div class="legend-tiles">
+      <div class="legend-row"><span class="tile tile-correct">✓</span><span>Exact match</span></div>
+      <div class="legend-row"><span class="tile tile-family">~</span><span>Right family or group, wrong flavor</span></div>
+      <div class="legend-row"><span class="tile tile-wrong">✗</span><span>Wrong</span></div>
+      <div class="legend-row"><span class="tile tile-more">↑</span><span>Need more (sweeter / more ice)</span></div>
+      <div class="legend-row"><span class="tile tile-less">↓</span><span>Need less (less sweet / less ice)</span></div>
+    </div>
+
+    <p class="legend-note">Column order: Tea · Milk · Syrup · Sugar · Ice · Topping(s)</p>
+    <p class="legend-note">At least 2 of Tea / Milk / Syrup must be chosen each guess.</p>
+
+    <button id="legend-close-btn">Got it</button>
+  </div>
+</div>
+
+<!-- ── End-state overlay ─────────────────────────────── -->
+<div id="end-overlay" class="overlay hidden">
+  <div class="overlay-box">
+    <div id="end-emoji"></div>
+    <h2 id="end-title"></h2>
+    <p id="end-body"></p>
+    <p id="end-answer" class="hidden"></p>
+    <div id="end-actions">
+      <button id="share-btn">Share</button>
+      <button id="next-level-btn" class="hidden">Next Level →</button>
+    </div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
