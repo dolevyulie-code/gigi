@@ -397,16 +397,28 @@ function evaluateGuess(guess, answer, guessIndex) {
   else if (gii < aii) ice = 'more_ice';
   else ice = 'less_ice';
 
-  // Toppings (use reordered list)
+  // Toppings (use reordered list) — count-aware group hints
+  // 1. Count how many of each group the answer has
+  const answerGroupCounts = {};
+  for (const aid of answer.toppings) {
+    const aT = TOPPINGS.find(x => x.id === aid);
+    if (aT) answerGroupCounts[aT.group] = (answerGroupCounts[aT.group] || 0) + 1;
+  }
+  // 2. Subtract exact matches so they don't also consume a 'group' slot
+  const remainingGroupCounts = Object.assign({}, answerGroupCounts);
+  for (const tid of toppings) {
+    if (answer.toppings.includes(tid)) {
+      const gT = TOPPINGS.find(x => x.id === tid);
+      if (gT) remainingGroupCounts[gT.group] = (remainingGroupCounts[gT.group] || 0) - 1;
+    }
+  }
+  // 3. Assign clues — correct first, then group (consuming remaining slots), then wrong
   const toppingClues = toppings.map(tid => {
     if (answer.toppings.includes(tid)) return { id: tid, state: 'correct' };
     const gT = TOPPINGS.find(x => x.id === tid);
-    if (gT) {
-      const hasGroupInAnswer = answer.toppings.some(aid => {
-        const aT = TOPPINGS.find(x => x.id === aid);
-        return aT && aT.group === gT.group;
-      });
-      if (hasGroupInAnswer) return { id: tid, state: 'group' };
+    if (gT && (remainingGroupCounts[gT.group] || 0) > 0) {
+      remainingGroupCounts[gT.group]--;
+      return { id: tid, state: 'group' };
     }
     return { id: tid, state: 'wrong' };
   });
@@ -427,15 +439,25 @@ function optimizeToppingOrder(guessToppings, answerToppings) {
   let bestScore = -1;
 
   for (const perm of perms) {
+    // Count-aware: track remaining group slots after exact matches
+    const agc = {};
+    for (const aid of answerToppings) {
+      const aT = TOPPINGS.find(x => x.id === aid);
+      if (aT) agc[aT.group] = (agc[aT.group] || 0) + 1;
+    }
+    const rgc = Object.assign({}, agc);
+    for (const tid of perm) {
+      if (answerToppings.includes(tid)) {
+        const gT = TOPPINGS.find(x => x.id === tid);
+        if (gT) rgc[gT.group] = (rgc[gT.group] || 0) - 1;
+      }
+    }
     const score = perm.reduce((sum, tid) => {
       if (answerToppings.includes(tid)) return sum + 3;
       const gT = TOPPINGS.find(x => x.id === tid);
-      if (gT) {
-        const inGroup = answerToppings.some(aid => {
-          const aT = TOPPINGS.find(x => x.id === aid);
-          return aT && aT.group === gT.group;
-        });
-        if (inGroup) return sum + 1;
+      if (gT && (rgc[gT.group] || 0) > 0) {
+        rgc[gT.group]--;
+        return sum + 1;
       }
       return sum;
     }, 0);
