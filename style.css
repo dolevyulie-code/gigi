@@ -25,11 +25,42 @@
 }
 
 html, body {
-  min-height: 100%;
+  height: 100%;
   font-family: 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
   color: var(--text);
   font-size: 15px;
+}
+
+body {
+  background: #2C2420;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#phone-frame {
+  position: relative;
+  width: 390px;
+  height: 100vh;
+  max-height: 844px;
+  background: var(--bg);
+  border-radius: 40px;
+  box-shadow: 0 0 0 10px #1a1210, 0 24px 64px rgba(0,0,0,.7);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+#phone-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* On real small screens, drop the phone frame */
+@media (max-width: 500px) {
+  body { display: block; background: var(--bg); }
+  #phone-frame { width: 100%; height: auto; max-height: none; border-radius: 0; box-shadow: none; }
+  #phone-scroll { height: auto; overflow: visible; }
 }
 
 /* ── Header ──────────────────────────────────────────────────── */
@@ -98,9 +129,11 @@ html, body {
 #gigi-stage {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex: 1;
   justify-content: center;
+  gap: 16px;
+  padding: 10px 16px 6px;
+  background: #fff;
+  border-bottom: 2px solid #F0E8DC;
 }
 
 .gigi-wrapper { display: inline-block; position: relative; }
@@ -260,21 +293,31 @@ html, body {
   margin-bottom: 2px;
 }
 
-/* ── Selector rows ───────────────────────────────────────────── */
+/* ── Selector rows (accordion) ───────────────────────────────── */
 .selector-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
-.selector-row-label {
-  font-size: .75rem;
-  font-weight: 600;
-  color: var(--muted);
+/* Accordion header */
+.selector-row-header {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #F5EDE4;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .15s;
 }
+.selector-row-header:hover  { background: #EDE4D8; }
+.selector-row-header.open   { background: #EDE4D8; border-radius: 10px 10px 0 0; border-color: #DDD0C0; }
+
+.selector-row-header-left  { display: flex; align-items: center; gap: 6px; }
+.selector-row-header-right { display: flex; align-items: center; gap: 6px; min-width: 0; }
 
 .cat-dot {
   width: 8px;
@@ -284,11 +327,59 @@ html, body {
   flex-shrink: 0;
 }
 
+.cat-name {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.selector-summary {
+  font-size: .72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+  text-align: right;
+}
+
+.selector-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  position: relative;
+  transition: transform .2s;
+}
+/* Draw chevron as CSS so no emoji needed */
+.selector-chevron::before,
+.selector-chevron::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  width: 6px;
+  height: 2px;
+  background: var(--muted);
+  border-radius: 1px;
+  transition: transform .2s;
+}
+.selector-chevron::before { left: 1px;  transform: rotate(45deg); }
+.selector-chevron::after  { right: 1px; transform: rotate(-45deg); }
+.selector-row-header.open .selector-chevron::before { transform: rotate(-45deg); }
+.selector-row-header.open .selector-chevron::after  { transform: rotate(45deg); }
+
+/* Chip list panel */
 .chip-list {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+  padding: 8px 10px 10px;
+  border: 1.5px solid #DDD0C0;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  background: #FAF5F0;
 }
+.chip-list--collapsed { display: none; }
 
 /* chip scrolling on very narrow screens */
 @media (max-width: 380px) {
@@ -333,7 +424,7 @@ html, body {
   border-style: solid;
 }
 
-/* Category colors */
+/* Category base colors */
 .chip[data-cat="tea"]      { color: var(--cat-tea); }
 .chip[data-cat="milk"]     { color: var(--cat-milk); }
 .chip[data-cat="syrup"]    { color: var(--cat-syrup); }
@@ -348,14 +439,19 @@ html, body {
 .chip[data-cat="ice"].selected      { background: var(--cat-ice); }
 .chip[data-cat="toppings"].selected { background: var(--cat-topping); }
 
-/* Topping capacity badge */
-.topping-badge {
-  font-size: .7rem;
-  font-weight: 700;
-  color: var(--muted);
-  margin-left: 2px;
-  align-self: flex-end;
-}
+/* Syrup family shading (needs_milk = deeper, no_milk = brighter) */
+.chip[data-cat="syrup"][data-family="needs_milk"]          { color: #943060; }
+.chip[data-cat="syrup"][data-family="needs_milk"].selected  { background: #943060; }
+.chip[data-cat="syrup"][data-family="no_milk"]             { color: #D868A8; }
+.chip[data-cat="syrup"][data-family="no_milk"].selected     { background: #D868A8; }
+
+/* Topping group shading (pearl = dark, popping = mid, jelly = light) */
+.chip[data-cat="toppings"][data-family="pearl"]            { color: #2A6E46; }
+.chip[data-cat="toppings"][data-family="pearl"].selected    { background: #2A6E46; }
+.chip[data-cat="toppings"][data-family="popping"]          { color: #3EA864; }
+.chip[data-cat="toppings"][data-family="popping"].selected  { background: #3EA864; }
+.chip[data-cat="toppings"][data-family="jelly"]            { color: #6CC494; }
+.chip[data-cat="toppings"][data-family="jelly"].selected    { background: #6CC494; }
 
 /* Shake animation for topping chip-list at capacity */
 @keyframes shake {
@@ -367,12 +463,13 @@ html, body {
 }
 .shake { animation: shake .35s ease; }
 
-/* Topping helper hint text */
+/* Topping hint — lives inside .chip-list, spans full width */
 #topping-hint {
+  flex-basis: 100%;
   font-size: .7rem;
   font-weight: 600;
   color: var(--muted);
-  min-height: 1em;
+  padding-top: 4px;
   transition: color .2s;
 }
 #topping-hint.full { color: var(--teal); }
@@ -625,7 +722,7 @@ html, body {
 
 /* ── Overlays ────────────────────────────────────────────────── */
 .overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: rgba(0,0,0,.55);
   z-index: 100;
@@ -633,6 +730,10 @@ html, body {
   align-items: center;
   justify-content: center;
   padding: 20px;
+}
+
+@media (max-width: 500px) {
+  .overlay { position: fixed; }
 }
 
 .overlay-box {

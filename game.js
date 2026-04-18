@@ -1047,83 +1047,131 @@ const ICE_LABELS = {
   extra:     'Extra ice',
 };
 
+const ALL_CATS = ['tea', 'milk', 'syrup', 'sugar', 'ice', 'toppings'];
+
+function getSummaryText(cat) {
+  const cfg = getLevelConfig(state.level);
+  if (cat === 'tea') {
+    if (!state.current.tea) return 'None';
+    const t = TEAS.find(x => x.id === state.current.tea);
+    return t ? t.label : state.current.tea;
+  }
+  if (cat === 'milk') {
+    if (!state.current.milk) return 'None';
+    const m = MILKS.find(x => x.id === state.current.milk);
+    return m ? m.label : state.current.milk;
+  }
+  if (cat === 'syrup') {
+    if (!state.current.syrup) return 'None';
+    const s = SYRUPS.find(x => x.id === state.current.syrup);
+    return s ? s.label : state.current.syrup;
+  }
+  if (cat === 'sugar') return state.current.sugar;
+  if (cat === 'ice') return ICE_LABELS[state.current.ice] || state.current.ice;
+  if (cat === 'toppings') {
+    const count = state.current.toppings.length;
+    const max = cfg.toppingSlots;
+    if (count === 0) return `None  (0/${max})`;
+    const labels = state.current.toppings.map(tid => {
+      const t = TOPPINGS.find(x => x.id === tid);
+      return t ? t.label : tid;
+    });
+    return `${labels.join(', ')}  (${count}/${max})`;
+  }
+  return '';
+}
+
+function toggleAccordion(cat, forceClose) {
+  const list   = document.getElementById(`chips-${cat}`);
+  const header = document.querySelector(`#selector-${cat} .selector-row-header`);
+  if (!list || !header) return;
+
+  const isOpen = !list.classList.contains('chip-list--collapsed');
+
+  if (forceClose || isOpen) {
+    list.classList.add('chip-list--collapsed');
+    header.classList.remove('open');
+  } else {
+    // Close every other accordion first
+    ALL_CATS.forEach(c => {
+      if (c === cat) return;
+      const l = document.getElementById(`chips-${c}`);
+      const h = document.querySelector(`#selector-${c} .selector-row-header`);
+      if (l) l.classList.add('chip-list--collapsed');
+      if (h) h.classList.remove('open');
+    });
+    list.classList.remove('chip-list--collapsed');
+    header.classList.add('open');
+  }
+}
+
 function buildSelectorRow(cat, level) {
-  const row   = document.getElementById(`selector-${cat}`);
-  const cfg   = getLevelConfig(level);
+  const row = document.getElementById(`selector-${cat}`);
+  row.innerHTML = '';
 
-  // Label
-  const labelEl = document.createElement('div');
-  labelEl.className = 'selector-row-label';
+  // Accordion header
+  const header = document.createElement('div');
+  header.className = 'selector-row-header';
+  header.dataset.cat = cat;
 
+  const left = document.createElement('div');
+  left.className = 'selector-row-header-left';
   const dot = document.createElement('span');
   dot.className = 'cat-dot';
   dot.style.background = CAT_DOT_COLORS[cat];
-  labelEl.appendChild(dot);
+  left.appendChild(dot);
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'cat-name';
+  nameSpan.textContent = cat === 'toppings' ? 'Toppings' : cat.charAt(0).toUpperCase() + cat.slice(1);
+  left.appendChild(nameSpan);
+  header.appendChild(left);
 
-  let labelText;
-  if (cat === 'toppings') {
-    labelText = document.createTextNode(`Toppings `);
-    labelEl.appendChild(labelText);
-    const badge = document.createElement('span');
-    badge.className = 'topping-badge';
-    badge.id = 'topping-badge';
-    badge.textContent = `(0/${cfg.toppingSlots})`;
-    labelEl.appendChild(badge);
-  } else {
-    labelText = document.createTextNode(cat.charAt(0).toUpperCase() + cat.slice(1));
-    labelEl.appendChild(labelText);
-  }
+  const right = document.createElement('div');
+  right.className = 'selector-row-header-right';
+  const summary = document.createElement('span');
+  summary.className = 'selector-summary';
+  summary.id = `summary-${cat}`;
+  right.appendChild(summary);
+  const chevron = document.createElement('span');
+  chevron.className = 'selector-chevron';
+  right.appendChild(chevron);
+  header.appendChild(right);
 
-  row.appendChild(labelEl);
+  row.appendChild(header);
 
-  // Chip list
+  // Chip list — collapsed by default
   const list = document.createElement('div');
-  list.className = 'chip-list';
+  list.className = 'chip-list chip-list--collapsed';
   list.id = `chips-${cat}`;
   row.appendChild(list);
-
-  // Topping hint text (lives below the chip list)
-  if (cat === 'toppings') {
-    const hint = document.createElement('div');
-    hint.id = 'topping-hint';
-    row.appendChild(hint);
-  }
 
   buildChips(cat, level);
 }
 
 function buildChips(cat, level) {
   const list = document.getElementById(`chips-${cat}`);
+  if (!list) return;
   list.innerHTML = '';
-  const cfg = getLevelConfig(level);
 
   if (cat === 'tea') {
     addNoneChip(list, 'tea');
-    for (const t of getUnlocked(TEAS, level)) {
-      addChip(list, 'tea', t.id, t.label);
-    }
+    for (const t of getUnlocked(TEAS, level)) addChip(list, 'tea', t.id, t.label);
   } else if (cat === 'milk') {
     addNoneChip(list, 'milk');
-    for (const m of getUnlocked(MILKS, level)) {
-      addChip(list, 'milk', m.id, m.label);
-    }
+    for (const m of getUnlocked(MILKS, level)) addChip(list, 'milk', m.id, m.label);
   } else if (cat === 'syrup') {
     addNoneChip(list, 'syrup');
-    for (const s of getUnlocked(SYRUPS, level)) {
-      addChip(list, 'syrup', s.id, s.label);
-    }
+    for (const s of getUnlocked(SYRUPS, level)) addChip(list, 'syrup', s.id, s.label, s.family);
   } else if (cat === 'sugar') {
-    for (const s of SUGAR_LEVELS) {
-      addChip(list, 'sugar', s, s);
-    }
+    for (const s of SUGAR_LEVELS) addChip(list, 'sugar', s, s);
   } else if (cat === 'ice') {
-    for (const i of ICE_LEVELS) {
-      addChip(list, 'ice', i, ICE_LABELS[i]);
-    }
+    for (const i of ICE_LEVELS) addChip(list, 'ice', i, ICE_LABELS[i]);
   } else if (cat === 'toppings') {
-    for (const t of getUnlocked(TOPPINGS, level)) {
-      addChip(list, 'toppings', t.id, t.label);
-    }
+    for (const t of getUnlocked(TOPPINGS, level)) addChip(list, 'toppings', t.id, t.label, t.group);
+    // Hint lives inside the chip list so it shares the panel border
+    const hint = document.createElement('div');
+    hint.id = 'topping-hint';
+    list.appendChild(hint);
   }
 
   refreshChipState(cat);
@@ -1138,12 +1186,13 @@ function addNoneChip(list, cat) {
   list.appendChild(chip);
 }
 
-function addChip(list, cat, value, label) {
+function addChip(list, cat, value, label, family) {
   const chip = document.createElement('button');
   chip.className = 'chip';
   chip.dataset.cat   = cat;
   chip.dataset.value = value;
   chip.textContent = label;
+  if (family) chip.dataset.family = family;
   list.appendChild(chip);
 }
 
@@ -1173,26 +1222,27 @@ function refreshChipState(cat) {
     chip.classList.toggle('selected', selected);
   });
 
-  // Update topping badge + hint text
+  // Update topping hint text
   if (cat === 'toppings') {
-    const badge = document.getElementById('topping-badge');
-    const cfg   = getLevelConfig(state.level);
+    const hint = document.getElementById('topping-hint');
+    const cfg  = getLevelConfig(state.level);
     const count = state.current.toppings.length;
     const max   = cfg.toppingSlots;
-    if (badge) badge.textContent = `(${count}/${max})`;
-
-    const hint = document.getElementById('topping-hint');
     if (hint) {
       if (count >= max) {
-        hint.textContent = `${max} of ${max} selected — tap a topping to swap`;
+        hint.textContent = `${max} of ${max} selected`;
         hint.classList.add('full');
         hint.classList.remove('flash');
       } else {
-        hint.textContent = `Pick up to ${max} topping${max > 1 ? 's' : ''}`;
+        hint.textContent = `Pick ${max} topping${max > 1 ? 's' : ''}`;
         hint.classList.remove('full', 'flash');
       }
     }
   }
+
+  // Update summary text in accordion header
+  const summaryEl = document.getElementById(`summary-${cat}`);
+  if (summaryEl) summaryEl.textContent = getSummaryText(cat);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1255,6 +1305,14 @@ function onChipClick(cat, value) {
 
   refreshChipState(cat);
   onSelectionChange();
+
+  // Close accordion after picking a radio-style category;
+  // close toppings automatically when all slots are filled
+  if (cat !== 'toppings') {
+    toggleAccordion(cat, true);
+  } else if (state.current.toppings.length >= getLevelConfig(state.level).toppingSlots) {
+    toggleAccordion('toppings', true);
+  }
 }
 
 function onSelectionChange() {
@@ -1818,8 +1876,13 @@ function initGame() {
 document.addEventListener('DOMContentLoaded', () => {
   initGame();
 
-  // Delegated click: selector chips
+  // Delegated click: accordion headers + chips
   document.getElementById('selectors-col').addEventListener('click', e => {
+    const header = e.target.closest('.selector-row-header');
+    if (header) {
+      toggleAccordion(header.dataset.cat);
+      return;
+    }
     const chip = e.target.closest('.chip');
     if (!chip) return;
     if (state.solved || state.failed) return;

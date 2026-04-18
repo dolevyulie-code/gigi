@@ -8,22 +8,12 @@
 </head>
 <body>
 
+<div id="phone-frame">
+<div id="phone-scroll">
+
 <!-- ── Header ─────────────────────────────────────────── -->
 <header id="header">
   <span id="title">Gigi</span>
-
-  <div id="gigi-stage">
-    <div class="gigi-wrapper" id="gigi-header">
-      <div class="gigi-idle-bob">
-        <img src="img/gigi-idle.png" class="gigi-img gigi-img--hero" alt="Gigi" />
-      </div>
-    </div>
-    <div id="gigi-speech" class="hidden" aria-live="polite">
-      <div class="gigi-speech-bubble">
-        <p class="gigi-speech-text" id="gigi-speech-text"></p>
-      </div>
-    </div>
-  </div>
 
   <span id="header-right">
     <span id="guess-counter">0 / 7</span>
@@ -32,6 +22,20 @@
     <button id="info-btn" aria-label="How to play">ℹ</button>
   </span>
 </header>
+
+<!-- ── Gigi stage ─────────────────────────────────────── -->
+<div id="gigi-stage">
+  <div class="gigi-wrapper" id="gigi-header">
+    <div class="gigi-idle-bob">
+      <img src="img/gigi-idle.png" class="gigi-img gigi-img--hero" alt="Gigi" />
+    </div>
+  </div>
+  <div id="gigi-speech" class="hidden" aria-live="polite">
+    <div class="gigi-speech-bubble">
+      <p class="gigi-speech-text" id="gigi-speech-text"></p>
+    </div>
+  </div>
+</div>
 
 <!-- ── Main area ──────────────────────────────────────── -->
 <main id="main">
@@ -75,6 +79,8 @@
   </div>
   <div id="history-rows"></div>
 </section>
+
+</div><!-- /phone-scroll -->
 
 <!-- ── Legend overlay ────────────────────────────────── -->
 <div id="legend-overlay" class="overlay hidden">
@@ -194,6 +200,8 @@
   </div>
 
 </div>
+
+</div><!-- /phone-frame -->
 
 <script src="game.js"></script>
 </body>
