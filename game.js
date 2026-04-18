@@ -1141,7 +1141,9 @@ function buildSelectorRow(cat, level) {
 
   // Chip list — collapsed by default
   const list = document.createElement('div');
-  list.className = 'chip-list chip-list--collapsed';
+  list.className = cat === 'toppings'
+    ? 'chip-list chip-list--checklist chip-list--collapsed'
+    : 'chip-list chip-list--collapsed';
   list.id = `chips-${cat}`;
   row.appendChild(list);
 
@@ -1167,7 +1169,7 @@ function buildChips(cat, level) {
   } else if (cat === 'ice') {
     for (const i of ICE_LEVELS) addChip(list, 'ice', i, ICE_LABELS[i]);
   } else if (cat === 'toppings') {
-    for (const t of getUnlocked(TOPPINGS, level)) addChip(list, 'toppings', t.id, t.label, t.group);
+    for (const t of getUnlocked(TOPPINGS, level)) addToppingCheckbox(list, t.id, t.label, t.group);
     // Hint lives inside the chip list so it shares the panel border
     const hint = document.createElement('div');
     hint.id = 'topping-hint';
@@ -1196,10 +1198,29 @@ function addChip(list, cat, value, label, family) {
   list.appendChild(chip);
 }
 
+function addToppingCheckbox(list, value, label, group) {
+  const item = document.createElement('div');
+  item.className = 'topping-check-item';
+  item.dataset.cat   = 'toppings';
+  item.dataset.value = value;
+  if (group) item.dataset.family = group;
+
+  const box = document.createElement('span');
+  box.className = 'check-box';
+  item.appendChild(box);
+
+  const lbl = document.createElement('span');
+  lbl.className = 'check-label';
+  lbl.textContent = label;
+  item.appendChild(lbl);
+
+  list.appendChild(item);
+}
+
 function refreshChipState(cat) {
   const list = document.getElementById(`chips-${cat}`);
   if (!list) return;
-  const chips = list.querySelectorAll('.chip');
+  const chips = list.querySelectorAll('.chip, .topping-check-item');
 
   chips.forEach(chip => {
     const val = chip.dataset.value;
@@ -1883,7 +1904,7 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleAccordion(header.dataset.cat);
       return;
     }
-    const chip = e.target.closest('.chip');
+    const chip = e.target.closest('.chip') || e.target.closest('.topping-check-item');
     if (!chip) return;
     if (state.solved || state.failed) return;
     onChipClick(chip.dataset.cat, chip.dataset.value);
