@@ -65,6 +65,41 @@ const LEVELS = [
   { level: 6, toppingSlots: 3 },
 ];
 
+const GIGI_MOODS = {
+  idle:  'img/gigi-idle.png',
+  happy: 'img/gigi-happy.png',
+  cool:  'img/gigi-cool.png',
+  smug:  'img/gigi-smug.png',
+  dead:  'img/gigi-dead.png',
+};
+
+const GIGI_DIALOGUE = {
+  failure: [
+    "You failed. I'm not mad, just disappointed.",
+    "That was painful to watch.",
+    "Let's pretend this never happened.",
+    "A for effort. F for everything else.",
+    "Skill issue.",
+    "I've seen toddlers do better. I'm not kidding.",
+    "Did you even try? Be honest.",
+    "Please tell me you were distracted.",
+  ],
+  levelSuccess: [
+    "Finally. Took you long enough.",
+    "Not bad. Don't get used to it.",
+    "Huh. You have a brain after all.",
+    "Okay. That was lucky.",
+  ],
+  gameComplete: [
+    "Not bad. For a human.",
+    "I didn't think you'd make it. And yet.",
+    "Six drinks. One champion. Me, for putting up with you.",
+    "All six levels. You've peaked. It's all downhill from here.",
+  ],
+};
+
+const gigiLastShown = { failure: -1, levelSuccess: -1, gameComplete: -1 };
+
 function getUnlocked(list, level) {
   return list.filter(x => x.unlocksAt <= level);
 }
@@ -1329,16 +1364,64 @@ function prependGuessRow(recipe, clues, isOld) {
 ═══════════════════════════════════════════════════════════════ */
 
 function showGigiPhrase(text, isRoast) {
-  const bubble = document.getElementById('speech-bubble');
-  bubble.textContent = text;
-  bubble.classList.remove('hidden', 'roast');
-  if (isRoast) bubble.classList.add('roast');
+  const speechEl = document.getElementById('gigi-speech');
+  const textEl   = document.getElementById('gigi-speech-text');
+  if (!speechEl || !textEl) return;
+  textEl.textContent = text;
+  speechEl.classList.remove('hidden');
+  // Replay pop-in animation
+  speechEl.classList.remove('gigi-speech--enter');
+  void speechEl.offsetWidth;
+  speechEl.classList.add('gigi-speech--enter');
+  // Roast tint
+  speechEl.querySelector('.gigi-speech-bubble')?.classList.toggle('roast', !!isRoast);
 }
 
 function clearGigiPhrase() {
-  const bubble = document.getElementById('speech-bubble');
-  bubble.classList.add('hidden');
-  bubble.textContent = '';
+  const speechEl = document.getElementById('gigi-speech');
+  const textEl   = document.getElementById('gigi-speech-text');
+  if (textEl) textEl.textContent = '';
+  if (speechEl) speechEl.classList.add('hidden');
+}
+
+function setGigiMood(mood, selector = '.gigi-img') {
+  const src = GIGI_MOODS[mood];
+  if (!src) return;
+  document.querySelectorAll(selector).forEach(img => { img.src = src; });
+}
+
+function playGigiAnimation(animClass, wrapperSelector = '#gigi-header') {
+  const el = document.querySelector(wrapperSelector);
+  if (!el) return;
+  el.classList.remove(animClass);
+  void el.offsetWidth;
+  el.classList.add(animClass);
+}
+
+function flashGigiMood(mood, durationMs = 3000) {
+  setGigiMood(mood);
+  setTimeout(() => setGigiMood('idle'), durationMs);
+}
+
+function pickGigiLine(category) {
+  const pool = GIGI_DIALOGUE[category];
+  if (!pool || pool.length === 0) return '';
+  if (pool.length === 1) return pool[0];
+  let idx;
+  do { idx = Math.floor(Math.random() * pool.length); }
+  while (idx === gigiLastShown[category]);
+  gigiLastShown[category] = idx;
+  return pool[idx];
+}
+
+function getTotalGuesses() {
+  const n = parseInt(localStorage.getItem('gigi_total_guesses') || '0', 10);
+  return n > 0 ? n : null;
+}
+
+function accumulateGuesses(count) {
+  const prev = parseInt(localStorage.getItem('gigi_total_guesses') || '0', 10);
+  localStorage.setItem('gigi_total_guesses', String(prev + count));
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1393,6 +1476,8 @@ function submitGuess() {
   if (won) {
     state.solved = true;
     showGigiPhrase(getPhrase('win'), false);
+    playGigiAnimation('gigi-hop', '#gigi-header');
+    accumulateGuesses(state.guesses.length);
     saveState();
     setTimeout(() => showEndState(true), 1200);
     return;
@@ -1401,6 +1486,7 @@ function submitGuess() {
   // Choose Gigi's phrase
   const phrase = choosePhrase(clues, roast);
   showGigiPhrase(phrase, !!roast);
+  playGigiAnimation('gigi-shake', '#gigi-header');
 
   // Check lose
   if (state.guesses.length >= MAX_GUESSES) {
@@ -1490,37 +1576,51 @@ function generateShareText() {
 }
 
 function showEndState(won) {
-  document.getElementById('end-emoji').textContent = won ? '🧋' : '😤';
-  document.getElementById('end-title').textContent = won
-    ? `Level ${state.level} complete!`
-    : "Gigi's drink remains a mystery.";
-  document.getElementById('end-body').textContent = won
-    ? `You nailed it in ${state.guesses.length} guess${state.guesses.length !== 1 ? 'es' : ''}.`
-    : `You ran out of guesses.`;
-
-  const answerEl = document.getElementById('end-answer');
-  if (!won) {
-    answerEl.textContent = 'The answer was: ' + recipeToText(state.answer);
-    answerEl.classList.remove('hidden');
-  } else {
-    answerEl.classList.add('hidden');
-  }
-
-  const retryBtn = document.getElementById('retry-btn');
-  if (!won) {
-    retryBtn.classList.remove('hidden');
-  } else {
-    retryBtn.classList.add('hidden');
-  }
-
-  const nextBtn = document.getElementById('next-level-btn');
-  if (won && state.level < 6) {
-    nextBtn.classList.remove('hidden');
-  } else {
-    nextBtn.classList.add('hidden');
-  }
-
+  // Hide all sub-popups
+  ['popup-failure', 'popup-success', 'popup-complete'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
   document.getElementById('end-overlay').classList.remove('hidden');
+
+  function popInThen(popup, followupAnim) {
+    const gigiEl = popup.querySelector('.gigi-wrapper');
+    if (!gigiEl) return;
+    gigiEl.classList.remove('gigi-pop-in');
+    void gigiEl.offsetWidth;
+    gigiEl.classList.add('gigi-pop-in');
+    setTimeout(() => {
+      gigiEl.classList.remove('gigi-pop-in');
+      playGigiAnimation(followupAnim, '#' + popup.id + ' .gigi-wrapper');
+    }, 450);
+  }
+
+  if (!won) {
+    // ── Failure popup ──
+    const popup = document.getElementById('popup-failure');
+    popup.classList.remove('hidden');
+    document.getElementById('failure-speech-text').textContent = pickGigiLine('failure');
+    document.getElementById('failure-answer').textContent = recipeToText(state.answer);
+    popInThen(popup, 'gigi-droop');
+
+  } else if (state.level < 6) {
+    // ── Level success popup ──
+    const popup = document.getElementById('popup-success');
+    popup.classList.remove('hidden');
+    document.getElementById('success-speech-text').textContent = pickGigiLine('levelSuccess');
+    document.getElementById('success-subtext').textContent = `Level ${state.level} complete`;
+    document.getElementById('success-answer').textContent = recipeToText(state.answer);
+    popInThen(popup, 'gigi-hop');
+
+  } else {
+    // ── Game complete popup ──
+    const popup = document.getElementById('popup-complete');
+    popup.classList.remove('hidden');
+    document.getElementById('complete-speech-text').textContent = pickGigiLine('gameComplete');
+    const totalGuesses = getTotalGuesses();
+    document.getElementById('stat-guesses').textContent = totalGuesses ?? '—';
+    document.getElementById('stat-hints').textContent = '—';
+    popInThen(popup, 'gigi-hop');
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1568,6 +1668,7 @@ function restartGame() {
     localStorage.removeItem(getSaveKey(state.date, l));
   }
   localStorage.setItem('gigi_level', '1');
+  localStorage.removeItem('gigi_total_guesses');
 
   state.level   = 1;
   state.guesses = [];
@@ -1721,21 +1822,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Share
-  document.getElementById('share-btn').addEventListener('click', () => {
-    const text = generateShareText();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('share-btn');
-        const orig = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = orig, 1800);
-      }).catch(() => {
+  // Share (all three popups use the same share logic)
+  function handleShare(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const text = generateShareText();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = orig, 1800);
+        }).catch(() => { prompt('Copy this:', text); });
+      } else {
         prompt('Copy this:', text);
-      });
-    } else {
-      prompt('Copy this:', text);
-    }
+      }
+    });
+  }
+  handleShare('share-btn');
+  handleShare('share-btn-success');
+  handleShare('share-btn-complete');
+
+  // Play again (game complete popup)
+  document.getElementById('restart-complete-btn').addEventListener('click', () => {
+    restartGame();
   });
 
   // Restart game (back to level 1)

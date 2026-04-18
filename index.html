@@ -11,19 +11,27 @@
 <!-- ── Header ─────────────────────────────────────────── -->
 <header id="header">
   <span id="title">Gigi</span>
-  <span id="guess-counter">0 / 7</span>
+
+  <div id="gigi-stage">
+    <div class="gigi-wrapper" id="gigi-header">
+      <div class="gigi-idle-bob">
+        <img src="img/gigi-idle.png" class="gigi-img gigi-img--hero" alt="Gigi" />
+      </div>
+    </div>
+    <div id="gigi-speech" class="hidden" aria-live="polite">
+      <div class="gigi-speech-bubble">
+        <p class="gigi-speech-text" id="gigi-speech-text"></p>
+      </div>
+    </div>
+  </div>
+
   <span id="header-right">
+    <span id="guess-counter">0 / 7</span>
     <button id="restart-btn" aria-label="Restart game">↺</button>
     <span id="level-pill">Level 1</span>
     <button id="info-btn" aria-label="How to play">ℹ</button>
   </span>
 </header>
-
-<!-- ── Gigi zone ──────────────────────────────────────── -->
-<section id="gigi-zone">
-  <div id="gigi-avatar">🧋</div>
-  <div id="speech-bubble" class="hidden"></div>
-</section>
 
 <!-- ── Main area ──────────────────────────────────────── -->
 <main id="main">
@@ -91,17 +99,90 @@
 
 <!-- ── End-state overlay ─────────────────────────────── -->
 <div id="end-overlay" class="overlay hidden">
-  <div class="overlay-box">
-    <div id="end-emoji"></div>
-    <h2 id="end-title"></h2>
-    <p id="end-body"></p>
-    <p id="end-answer" class="hidden"></p>
-    <div id="end-actions">
-      <button id="share-btn">Share</button>
-      <button id="retry-btn" class="hidden">Try Again</button>
-      <button id="next-level-btn" class="hidden">Next Level →</button>
+
+  <!-- Failure popup -->
+  <div id="popup-failure" class="overlay-box popup-failure hidden">
+    <div class="popup-top-row">
+      <div class="gigi-wrapper">
+        <div class="gigi-idle-bob">
+          <img src="img/gigi-idle.png" class="gigi-img gigi-img--popup" alt="Gigi" />
+        </div>
+      </div>
+      <div class="gigi-speech gigi-speech--popup">
+        <div class="gigi-speech-bubble">
+          <p class="gigi-speech-text" id="failure-speech-text"></p>
+          <p class="gigi-speech-subtext">You ran out of guesses.</p>
+        </div>
+      </div>
+    </div>
+    <div class="answer-reveal">
+      <p class="answer-reveal-label">THE ACTUAL ANSWER</p>
+      <p class="answer-reveal-text" id="failure-answer"></p>
+    </div>
+    <div class="popup-buttons">
+      <button id="share-btn" class="btn btn-secondary">Share</button>
+      <button id="retry-btn" class="btn btn-primary btn-primary--orange">Try again</button>
     </div>
   </div>
+
+  <!-- Level success popup -->
+  <div id="popup-success" class="overlay-box popup-level-success hidden">
+    <div class="popup-top-row">
+      <div class="gigi-wrapper">
+        <div class="gigi-idle-bob">
+          <img src="img/gigi-happy.png" class="gigi-img gigi-img--popup" alt="Gigi" />
+        </div>
+      </div>
+      <div class="gigi-speech gigi-speech--popup">
+        <div class="gigi-speech-bubble">
+          <p class="gigi-speech-text" id="success-speech-text"></p>
+          <p class="gigi-speech-subtext" id="success-subtext">Level 1 complete</p>
+        </div>
+      </div>
+    </div>
+    <div class="answer-reveal answer-reveal--success">
+      <p class="answer-reveal-label answer-reveal-label--success">YOUR DRINK</p>
+      <p class="answer-reveal-text" id="success-answer"></p>
+    </div>
+    <div class="popup-buttons">
+      <button id="share-btn-success" class="btn btn-secondary">Share</button>
+      <button id="next-level-btn" class="btn btn-primary btn-primary--green">Next level →</button>
+    </div>
+  </div>
+
+  <!-- Game complete popup -->
+  <div id="popup-complete" class="overlay-box popup-game-complete hidden">
+    <div class="complete-banner">ALL 6 LEVELS COMPLETE</div>
+    <div class="gigi-wrapper gigi-wrapper--centered">
+      <div class="gigi-idle-bob">
+        <img src="img/gigi-smug.png" class="gigi-img gigi-img--hero-popup" alt="Gigi" />
+      </div>
+    </div>
+    <div class="gigi-speech gigi-speech--centered">
+      <div class="gigi-speech-bubble gigi-speech-bubble--tail-up">
+        <p class="gigi-speech-text gigi-speech-text--centered" id="complete-speech-text"></p>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card">
+        <p class="stat-value">6</p>
+        <p class="stat-label">LEVELS</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-value" id="stat-guesses">—</p>
+        <p class="stat-label">GUESSES</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-value" id="stat-hints">—</p>
+        <p class="stat-label">HINTS</p>
+      </div>
+    </div>
+    <div class="popup-buttons">
+      <button id="share-btn-complete" class="btn btn-secondary">Share</button>
+      <button id="restart-complete-btn" class="btn btn-primary btn-primary--orange">Play again</button>
+    </div>
+  </div>
+
 </div>
 
 <script src="game.js"></script>
