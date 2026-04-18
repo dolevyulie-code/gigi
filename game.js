@@ -1739,10 +1739,15 @@ function retryLevel() {
 
 function updateLevelPill() {
   document.getElementById('level-pill').textContent = `Level ${state.level}`;
-  const headerCell = document.getElementById('topping-header-cell');
+  const headersEl = document.getElementById('history-headers');
   const cfg = getLevelConfig(state.level);
-  if (headerCell) {
-    headerCell.textContent = cfg.toppingSlots > 1 ? `Toppings` : 'Topping';
+  // Remove old topping header cells and rebuild for the current level
+  headersEl.querySelectorAll('.topping-header-cell').forEach(el => el.remove());
+  for (let i = 0; i < cfg.toppingSlots; i++) {
+    const span = document.createElement('span');
+    span.className = 'topping-header-cell';
+    span.textContent = `Topping ${i + 1}`;
+    headersEl.appendChild(span);
   }
 }
 
