@@ -711,13 +711,13 @@ html, body {
 }
 
 .answer-reveal {
-  background: #2b2b2b;
+  background: #111111;
   color: #FFF8EE;
   border-radius: 14px;
   padding: 14px 18px;
   margin-bottom: 1.25rem;
 }
-.answer-reveal--success { background: #1D9E75; border: 2.5px solid #2b2b2b; }
+.answer-reveal--success { background: #1D9E75; border: 2.5px solid #FFF8EE; }
 
 .answer-reveal-label {
   margin: 0 0 6px;
