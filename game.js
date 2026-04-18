@@ -917,114 +917,37 @@ function loadState() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 9 — Colors for cup visual
+   SECTION 9 — BobaCup wiring
 ═══════════════════════════════════════════════════════════════ */
 
-const TEA_COLORS = {
-  black:   '#8B6E52',
-  green:   '#7DAF5E',
-  oolong:  '#B08060',
-  jasmine: '#C8B880',
-  roasted: '#7A5030',
-};
+let cupInstance = null;
 
-const SYRUP_COLORS = {
-  mango:       '#FFB830',
-  brown_sugar: '#9B5E30',
-  strawberry:  '#E84060',
-  osmanthus:   '#F0C060',
-  lychee:      '#F8C0C8',
-  peach:       '#F0A070',
-  thai:        '#E88030',
-  rose:        '#E87090',
-  matcha:      '#70A850',
-  taro:        '#9870B8',
-  passion:     '#E0608A',
-};
+const ICE_TO_BOBA  = { no_ice: 'none', less_ice: 'less', regular: 'regular', extra: 'extra' };
 
-const TOPPING_COLORS = {
-  brown_sugar_pearl: '#7A4A28',
-  classic_pearl:     '#5C3A28',
-  crystal_boba:      '#C8E8E8',
-  boba_strawberry:   '#E85070',
-  boba_mango:        '#FFB030',
-  boba_passion:      '#E86090',
-  boba_lychee:       '#F8B0C0',
-  boba_coffee:       '#6A4028',
-  boba_peach:        '#F09060',
-  jelly_mango:       '#F8C838',
-  jelly_passion:     '#E070A0',
-  jelly_lychee:      '#F8C0D0',
-  jelly_coffee:      '#604030',
-  jelly_grass:       '#70A848',
-  jelly_rainbow:     '#A070D0',
-  jelly_strawberry:  '#E84060',
-};
+function mapSyrup(s) {
+  if (!s) return 'none';
+  const overrides = { passion: 'passion-fruit' };
+  return overrides[s] || s.replace(/_/g, '-');
+}
+
+function toBobaState(cur) {
+  return {
+    tea:      cur.tea   || 'none',
+    milk:     cur.milk  || 'none',
+    syrup:    mapSyrup(cur.syrup),
+    sugar:    cur.sugar ? cur.sugar.replace('%', '') : '50',
+    ice:      ICE_TO_BOBA[cur.ice] || 'regular',
+    toppings: (cur.toppings || []).map(t => t.replace(/_/g, '-')),
+  };
+}
 
 /* ═══════════════════════════════════════════════════════════════
    SECTION 10 — UI: Cup Visual
 ═══════════════════════════════════════════════════════════════ */
 
 function updateCupVisual(current) {
-  const cup         = document.getElementById('cup');
-  const teaEl       = document.getElementById('cup-tea');
-  const milkEl      = document.getElementById('cup-milk');
-  const syrupEl     = document.getElementById('cup-syrup-tint');
-  const iceEl       = document.getElementById('cup-ice');
-  const toppingsEl  = document.getElementById('cup-toppings');
-  const sugarLabel  = document.getElementById('cup-sugar-label');
-
-  const cupH = 120; // matches CSS height
-
-  // Ice layer (top of cup, absolute top)
-  const iceHeights = { no_ice: 0, less_ice: 10, regular: 18, extra: 26 };
-  const iceH = iceHeights[current.ice] || 0;
-  iceEl.style.height = iceH + 'px';
-
-  // Topping dots (bottom 18px)
-  toppingsEl.innerHTML = '';
-  for (const tid of current.toppings) {
-    const dot = document.createElement('div');
-    dot.className = 'topping-dot';
-    dot.style.background = TOPPING_COLORS[tid] || '#888';
-    toppingsEl.appendChild(dot);
-  }
-
-  // Tea + milk layers
-  const hasTea  = current.tea  !== null;
-  const hasMilk = current.milk !== null;
-
-  if (hasTea && hasMilk) {
-    // Both: milk 30% from bottom (above toppings), tea 30% just above milk
-    milkEl.style.bottom = '18px';
-    milkEl.style.height = '36px';
-    teaEl.style.bottom  = '54px'; // 18 + 36
-    teaEl.style.height  = '36px';
-    teaEl.style.background = TEA_COLORS[current.tea] || '#C89B7B';
-  } else if (hasTea) {
-    milkEl.style.height = '0';
-    teaEl.style.bottom  = '18px';
-    teaEl.style.height  = '54px';
-    teaEl.style.background = TEA_COLORS[current.tea] || '#C89B7B';
-  } else if (hasMilk) {
-    teaEl.style.height  = '0';
-    milkEl.style.bottom = '18px';
-    milkEl.style.height = '54px';
-  } else {
-    teaEl.style.height  = '0';
-    milkEl.style.height = '0';
-  }
-
-  // Syrup tint overlay
-  if (current.syrup) {
-    syrupEl.style.opacity    = '0.22';
-    syrupEl.style.background = SYRUP_COLORS[current.syrup] || '#F0C0A0';
-  } else {
-    syrupEl.style.opacity = '0';
-  }
-
-  // Sugar label
-  sugarLabel.textContent = current.sugar || '';
+  if (!cupInstance) return;
+  cupInstance.update(toBobaState(current));
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1858,6 +1781,14 @@ function initGame() {
   buildUI(state.level);
   updateLevelPill();
   updateGuessCounter();
+
+  // Mount illustrated SVG cup (once on first init)
+  if (!cupInstance) {
+    cupInstance = BobaCup.mount(
+      document.getElementById('cup-svg-container'),
+      { sugarLabelEl: document.getElementById('cup-sugar-label') }
+    );
+  }
   updateCupVisual(state.current);
 
   // Replay saved guesses into history (old → shown without animation)
