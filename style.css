@@ -77,7 +77,7 @@ html, body {
   letter-spacing: .5px;
 }
 
-#info-btn {
+#info-btn, #restart-btn {
   width: 30px;
   height: 30px;
   border: 2px solid var(--muted);
@@ -91,7 +91,7 @@ html, body {
   justify-content: center;
   transition: background .15s, color .15s;
 }
-#info-btn:hover { background: var(--muted); color: #fff; }
+#info-btn:hover, #restart-btn:hover { background: var(--muted); color: #fff; }
 
 /* ── Gigi zone ───────────────────────────────────────────────── */
 #gigi-zone {
@@ -276,7 +276,7 @@ html, body {
   align-self: flex-end;
 }
 
-/* Shake animation for topping at capacity */
+/* Shake animation for topping chip-list at capacity */
 @keyframes shake {
   0%,100% { transform: translateX(0); }
   20% { transform: translateX(-4px); }
@@ -285,6 +285,28 @@ html, body {
   80% { transform: translateX(3px); }
 }
 .shake { animation: shake .35s ease; }
+
+/* Topping helper hint text */
+#topping-hint {
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--muted);
+  min-height: 1em;
+  transition: color .2s;
+}
+#topping-hint.full { color: var(--teal); }
+#topping-hint.flash {
+  color: var(--accent) !important;
+  font-weight: 700;
+}
+
+/* Pulse/glow on selected chips when a new chip is blocked */
+@keyframes chip-pulse {
+  0%   { transform: scale(1);    filter: brightness(1);   }
+  40%  { transform: scale(1.12); filter: brightness(1.35); }
+  100% { transform: scale(1);    filter: brightness(1);   }
+}
+.chip-pulse { animation: chip-pulse .4s ease; }
 
 /* ── Validation error ────────────────────────────────────────── */
 #validation-error {

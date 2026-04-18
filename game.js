@@ -833,9 +833,17 @@ function loadState() {
   const raw  = localStorage.getItem(key);
   if (raw) {
     const saved = JSON.parse(raw);
-    state.guesses = saved.guesses || [];
-    state.solved  = saved.solved  || false;
-    state.failed  = saved.failed  || false;
+    // Never restore a failed state — player always gets a fresh try on reload
+    if (saved.failed) {
+      localStorage.removeItem(key);
+      state.guesses = [];
+      state.solved  = false;
+      state.failed  = false;
+    } else {
+      state.guesses = saved.guesses || [];
+      state.solved  = saved.solved  || false;
+      state.failed  = false;
+    }
   } else {
     state.guesses = [];
     state.solved  = false;
@@ -1029,6 +1037,13 @@ function buildSelectorRow(cat, level) {
   list.id = `chips-${cat}`;
   row.appendChild(list);
 
+  // Topping hint text (lives below the chip list)
+  if (cat === 'toppings') {
+    const hint = document.createElement('div');
+    hint.id = 'topping-hint';
+    row.appendChild(hint);
+  }
+
   buildChips(cat, level);
 }
 
@@ -1113,11 +1128,25 @@ function refreshChipState(cat) {
     chip.classList.toggle('selected', selected);
   });
 
-  // Update topping badge
+  // Update topping badge + hint text
   if (cat === 'toppings') {
     const badge = document.getElementById('topping-badge');
     const cfg   = getLevelConfig(state.level);
-    if (badge) badge.textContent = `(${state.current.toppings.length}/${cfg.toppingSlots})`;
+    const count = state.current.toppings.length;
+    const max   = cfg.toppingSlots;
+    if (badge) badge.textContent = `(${count}/${max})`;
+
+    const hint = document.getElementById('topping-hint');
+    if (hint) {
+      if (count >= max) {
+        hint.textContent = `${max} of ${max} selected — tap a topping to swap`;
+        hint.classList.add('full');
+        hint.classList.remove('flash');
+      } else {
+        hint.textContent = `Pick up to ${max} topping${max > 1 ? 's' : ''}`;
+        hint.classList.remove('full', 'flash');
+      }
+    }
   }
 }
 
@@ -1145,13 +1174,33 @@ function onChipClick(cat, value) {
       state.current.toppings.splice(idx, 1);
     } else {
       if (state.current.toppings.length >= cfg.toppingSlots) {
-        // At capacity — shake the chip
-        const chip = document.querySelector(`#chips-toppings .chip[data-value="${value}"]`);
-        if (chip) {
-          chip.classList.remove('shake');
-          void chip.offsetWidth; // reflow to restart animation
-          chip.classList.add('shake');
-          chip.addEventListener('animationend', () => chip.classList.remove('shake'), { once: true });
+        // At capacity — shake the chip list, pulse selected chips, flash hint
+        const chipList = document.getElementById('chips-toppings');
+        if (chipList) {
+          chipList.classList.remove('shake');
+          void chipList.offsetWidth;
+          chipList.classList.add('shake');
+          chipList.addEventListener('animationend', () => chipList.classList.remove('shake'), { once: true });
+
+          // Pulse all currently selected chips
+          chipList.querySelectorAll('.chip.selected').forEach(c => {
+            c.classList.remove('chip-pulse');
+            void c.offsetWidth;
+            c.classList.add('chip-pulse');
+            c.addEventListener('animationend', () => c.classList.remove('chip-pulse'), { once: true });
+          });
+        }
+
+        // Flash the hint text
+        const hint = document.getElementById('topping-hint');
+        if (hint) {
+          hint.classList.remove('flash');
+          void hint.offsetWidth;
+          hint.classList.add('flash');
+          setTimeout(() => {
+            hint.classList.remove('flash');
+            hint.classList.add('full');
+          }, 600);
         }
         return;
       }
@@ -1356,7 +1405,8 @@ function submitGuess() {
   // Check lose
   if (state.guesses.length >= MAX_GUESSES) {
     state.failed = true;
-    saveState();
+    // Don't persist failed state — clear progress so a reload gives a fresh try
+    localStorage.removeItem(getSaveKey(state.date, state.level));
     setTimeout(() => showEndState(false), 1400);
     return;
   }
@@ -1456,6 +1506,13 @@ function showEndState(won) {
     answerEl.classList.add('hidden');
   }
 
+  const retryBtn = document.getElementById('retry-btn');
+  if (!won) {
+    retryBtn.classList.remove('hidden');
+  } else {
+    retryBtn.classList.add('hidden');
+  }
+
   const nextBtn = document.getElementById('next-level-btn');
   if (won && state.level < 6) {
     nextBtn.classList.remove('hidden');
@@ -1499,6 +1556,59 @@ function advanceLevel() {
   document.getElementById('history-headers').classList.add('hidden');
 
   updateLevelPill();
+  updateCupVisual(state.current);
+  onSelectionChange();
+}
+
+function restartGame() {
+  if (!confirm('Restart from Level 1? All progress will be lost.')) return;
+
+  // Clear all daily saves for today across every level
+  for (let l = 1; l <= 6; l++) {
+    localStorage.removeItem(getSaveKey(state.date, l));
+  }
+  localStorage.setItem('gigi_level', '1');
+
+  state.level   = 1;
+  state.guesses = [];
+  state.solved  = false;
+  state.failed  = false;
+  state.date    = getTodayDateString();
+  state.answer  = getDailyAnswer(1);
+  state.current = { tea: null, milk: null, syrup: null, sugar: '50%', ice: 'regular', toppings: [] };
+  resetPhrases();
+
+  document.getElementById('end-overlay').classList.add('hidden');
+  document.getElementById('history-rows').innerHTML = '';
+  document.getElementById('history-headers').classList.add('hidden');
+  document.getElementById('submit-btn').disabled = false;
+  buildUI(state.level);
+  updateLevelPill();
+  updateGuessCounter();
+  clearGigiPhrase();
+  updateCupVisual(state.current);
+  onSelectionChange();
+}
+
+function retryLevel() {
+  document.getElementById('end-overlay').classList.add('hidden');
+
+  state.guesses = [];
+  state.solved  = false;
+  state.failed  = false;
+  state.current = {
+    tea: null, milk: null, syrup: null,
+    sugar: '50%', ice: 'regular', toppings: [],
+  };
+  // answer stays the same — same date + level seed
+  resetPhrases();
+
+  document.getElementById('history-rows').innerHTML = '';
+  document.getElementById('history-headers').classList.add('hidden');
+  document.getElementById('submit-btn').disabled = false;
+  buildUI(state.level);
+  updateGuessCounter();
+  clearGigiPhrase();
   updateCupVisual(state.current);
   onSelectionChange();
 }
@@ -1605,6 +1715,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  document.getElementById('end-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) {
+      e.currentTarget.classList.add('hidden');
+    }
+  });
+
   // Share
   document.getElementById('share-btn').addEventListener('click', () => {
     const text = generateShareText();
@@ -1620,6 +1736,16 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       prompt('Copy this:', text);
     }
+  });
+
+  // Restart game (back to level 1)
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    restartGame();
+  });
+
+  // Retry (fail state only)
+  document.getElementById('retry-btn').addEventListener('click', () => {
+    retryLevel();
   });
 
   // Next level
