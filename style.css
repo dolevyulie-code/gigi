@@ -719,15 +719,15 @@ html, body {
 }
 .answer-reveal--success { background: #1D9E75; border: 2.5px solid #FFF8EE; }
 
-.answer-reveal-label {
+.answer-reveal .answer-reveal-label {
   margin: 0 0 6px;
   font-size: 11px;
   letter-spacing: 1.5px;
   font-weight: 500;
   color: #D85A30;
 }
-.answer-reveal-label--success { color: #FFF8EE; }
-.answer-reveal-text { margin: 0; font-size: 15px; font-weight: 500; line-height: 1.5; }
+.answer-reveal .answer-reveal-label--success { color: #FFF8EE; }
+.answer-reveal .answer-reveal-text { margin: 0; font-size: 15px; font-weight: 500; line-height: 1.5; color: #FFF8EE; }
 
 .popup-buttons { display: flex; gap: 10px; }
 
