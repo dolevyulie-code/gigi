@@ -373,9 +373,18 @@ function generateRandomRecipe(rng, level) {
   return { tea, milk, syrup, sugar, ice, toppings };
 }
 
+function getOrCreateSessionSeed() {
+  let seed = localStorage.getItem('gigi_session_seed');
+  if (!seed) {
+    seed = String(Math.floor(Math.random() * 2147483647) + 1);
+    localStorage.setItem('gigi_session_seed', seed);
+  }
+  return seed;
+}
+
 function getDailyAnswer(level) {
-  const dateStr = getTodayDateString();
-  const baseSeed = hashString(dateStr + ':' + level);
+  const sessionSeed = getOrCreateSessionSeed();
+  const baseSeed = hashString(sessionSeed + ':' + level);
   let attempt = 0;
   while (true) {
     const rng = mulberry32(baseSeed + attempt);
@@ -841,12 +850,13 @@ function choosePhrase(clues, roastKey) {
    SECTION 8 — Persistence
 ═══════════════════════════════════════════════════════════════ */
 
-function getSaveKey(date, level) {
-  return `gigi_${date}_L${level}`;
+function getSaveKey(level) {
+  const seed = getOrCreateSessionSeed();
+  return `gigi_${seed}_L${level}`;
 }
 
 function saveState() {
-  const key = getSaveKey(state.date, state.level);
+  const key = getSaveKey(state.level);
   const data = {
     guesses: state.guesses,
     solved:  state.solved,
@@ -864,7 +874,7 @@ function loadState() {
   state.date   = getTodayDateString();
   state.answer = getDailyAnswer(state.level);
 
-  const key  = getSaveKey(state.date, state.level);
+  const key  = getSaveKey(state.level);
   const raw  = localStorage.getItem(key);
   if (raw) {
     const saved = JSON.parse(raw);
@@ -1492,7 +1502,7 @@ function submitGuess() {
   if (state.guesses.length >= MAX_GUESSES) {
     state.failed = true;
     // Don't persist failed state — clear progress so a reload gives a fresh try
-    localStorage.removeItem(getSaveKey(state.date, state.level));
+    localStorage.removeItem(getSaveKey(state.level));
     setTimeout(() => showEndState(false), 1400);
     return;
   }
@@ -1635,7 +1645,6 @@ function advanceLevel() {
   document.getElementById('end-overlay').classList.add('hidden');
 
   // Reset game state for new level
-  state.date   = getTodayDateString();
   state.answer = getDailyAnswer(state.level);
   state.guesses = [];
   state.solved  = false;
@@ -1663,10 +1672,15 @@ function advanceLevel() {
 function restartGame() {
   if (!confirm('Restart from Level 1? All progress will be lost.')) return;
 
-  // Clear all daily saves for today across every level
-  for (let l = 1; l <= 6; l++) {
-    localStorage.removeItem(getSaveKey(state.date, l));
+  // Clear all saves for the current session across every level
+  const oldSeed = localStorage.getItem('gigi_session_seed');
+  if (oldSeed) {
+    for (let l = 1; l <= 6; l++) {
+      localStorage.removeItem(`gigi_${oldSeed}_L${l}`);
+    }
   }
+  // Generate a fresh session seed so all levels get new drinks
+  localStorage.setItem('gigi_session_seed', String(Math.floor(Math.random() * 2147483647) + 1));
   localStorage.setItem('gigi_level', '1');
   localStorage.removeItem('gigi_total_guesses');
 
@@ -1674,7 +1688,6 @@ function restartGame() {
   state.guesses = [];
   state.solved  = false;
   state.failed  = false;
-  state.date    = getTodayDateString();
   state.answer  = getDailyAnswer(1);
   state.current = { tea: null, milk: null, syrup: null, sugar: '50%', ice: 'regular', toppings: [] };
   resetPhrases();
