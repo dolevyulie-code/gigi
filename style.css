@@ -701,7 +701,7 @@ html, body {
   align-items: stretch;  /* reset overlay-box centering so top-row fills width */
 }
 
-.popup-game-complete { max-width: 460px; position: relative; }
+.popup-game-complete { max-width: 460px; position: relative; overflow: visible; }
 
 .popup-top-row {
   display: flex;
