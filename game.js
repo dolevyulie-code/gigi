@@ -1346,26 +1346,36 @@ function prependGuessRow(recipe, clues, isOld) {
   const row = document.createElement('div');
   row.className = 'guess-row' + (isOld ? ' old' : '');
 
-  // Labels sub-row
-  const labelsEl = document.createElement('div');
-  labelsEl.className = 'guess-labels';
-  labelsEl.textContent = ingredientLabel(recipe);
-  row.appendChild(labelsEl);
+  const teaObj   = recipe.tea   ? TEAS.find(t => t.id === recipe.tea)     : null;
+  const milkObj  = recipe.milk  ? MILKS.find(m => m.id === recipe.milk)   : null;
+  const syrupObj = recipe.syrup ? SYRUPS.find(s => s.id === recipe.syrup) : null;
+  const iceMap   = { no_ice: 'no ice', less_ice: 'less ice', regular: 'regular', extra: 'extra ice' };
 
-  // Tiles sub-row
-  const tileRow = document.createElement('div');
-  tileRow.className = 'tile-row';
+  const cols = [
+    { label: teaObj   ? teaObj.label   : 'none',             clue: clues.tea   },
+    { label: milkObj  ? milkObj.label  : 'none',             clue: clues.milk  },
+    { label: syrupObj ? syrupObj.label : 'none',             clue: clues.syrup },
+    { label: recipe.sugar,                                    clue: clues.sugar },
+    { label: iceMap[recipe.ice] || recipe.ice,                clue: clues.ice   },
+    ...clues.toppings.map((tc, i) => {
+      const t = TOPPINGS.find(x => x.id === recipe.toppings[i]);
+      return { label: t ? t.label : recipe.toppings[i], clue: tc.state };
+    }),
+  ];
 
-  tileRow.appendChild(buildClueTile(clues.tea));
-  tileRow.appendChild(buildClueTile(clues.milk));
-  tileRow.appendChild(buildClueTile(clues.syrup));
-  tileRow.appendChild(buildClueTile(clues.sugar));
-  tileRow.appendChild(buildClueTile(clues.ice));
-  for (const tc of clues.toppings) {
-    tileRow.appendChild(buildClueTile(tc.state));
+  for (const { label, clue } of cols) {
+    const col = document.createElement('div');
+    col.className = 'guess-col';
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'guess-col-label';
+    labelEl.textContent = label;
+
+    col.appendChild(labelEl);
+    col.appendChild(buildClueTile(clue));
+    row.appendChild(col);
   }
 
-  row.appendChild(tileRow);
   container.prepend(row);
 }
 
