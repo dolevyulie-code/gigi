@@ -1810,17 +1810,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('legend-close-btn').addEventListener('click', () => {
     document.getElementById('legend-overlay').classList.add('hidden');
   });
-  document.getElementById('legend-overlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget) {
-      e.currentTarget.classList.add('hidden');
-    }
-  });
-
-  document.getElementById('end-overlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget) {
-      e.currentTarget.classList.add('hidden');
-    }
-  });
 
   // Share (all three popups use the same share logic)
   function handleShare(btnId) {

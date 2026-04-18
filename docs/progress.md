@@ -57,7 +57,7 @@ Wordle-style boba recipe guessing game. Player guesses Gigi's secret daily drink
 
 ---
 
-## Session 2026-04-17 — Bug fixes + UX improvements
+## Session 2026-04-17 — Bug fixes + UX improvements (Phase 1)
 
 See full details in [session-2026-04-17.md](session-2026-04-17.md).
 
@@ -76,3 +76,32 @@ Clicking the dark backdrop around the win/fail overlay now dismisses it (same be
 ### 5. Topping selection UX helpers
 - Helper text below the topping chip list: "Pick up to X toppings" / "X of X selected — tap a topping to swap"
 - When tapping a new chip at capacity: chip list shakes, all selected chips pulse/glow, hint text flashes accent orange
+
+---
+
+## Session 2026-04-17 — Gigi character integration (Phase 2)
+
+See full details in [session-2026-04-17.md](session-2026-04-17.md#phase-2--gigi-character-integration-png-expressions--css-animations).
+
+### Summary
+Replaced the placeholder 🧋 emoji with 5 PNG character images (idle/happy/cool/smug/dead). Redesigned the header as a 3-column layout with a hero-sized Gigi (150px) and a persistent comic speech bubble that pops in with each new message. Replaced the single generic end overlay with 3 distinct character-driven popups.
+
+### Key changes
+
+**Header redesign**
+- `#gigi-zone` section removed; Gigi now lives inside `<header>` in a centered `#gigi-stage` flex column
+- `.gigi-wrapper` + `.gigi-idle-bob` two-div isolation pattern prevents CSS transform conflicts between continuous bob and reaction animations
+- Speech bubble starts hidden; appears on first guess with `gigi-speech-pop` pop-in animation
+
+**Popup overhaul**
+- Single `.overlay-box` replaced with 3 sub-popups inside `#end-overlay`: `#popup-failure` (grumpy Gigi, dark answer card, orange button), `#popup-success` (happy Gigi, green drink card, green Next Level button), `#popup-complete` (smug Gigi centered at 170px, upward bubble tail, banner, 3-stat grid)
+- Pop-in → follow-up animation sequencing: `gigi-pop-in` class removed before `gigi-droop`/`gigi-hop` fires (450ms) to prevent transform conflicts
+
+**Dialogue pools**
+- `GIGI_DIALOGUE`: 8 failure lines, 4 level-success lines, 4 game-complete lines — all approved and verbatim
+- Anti-repeat: `gigiLastShown` tracks last index per category; re-rolls until a different line is selected
+- `accumulateGuesses()` / `getTotalGuesses()`: cross-level guess counter in localStorage; reset on full restart; counts only successful guesses (won levels)
+
+**Not yet wired**
+- `gigi-cool.png`: code ready (`flashGigiMood('cool')`), needs a hint button feature
+- `gigi-dead.png`: code ready, needs a hard game-over state
