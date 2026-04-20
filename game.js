@@ -817,20 +817,27 @@ function choosePhrase(clues, roastKey) {
   // Roast takes priority
   if (roastKey) return getPhrase(roastKey);
 
-  // Priority scan of clues
-  if (clues.syrup === 'family')     return getPhrase('syrup_family');
-  if (clues.tea === 'wrong')        return getPhrase('tea_wrong');
-  if (clues.milk === 'wrong')       return getPhrase('milk_wrong');
-  if (clues.syrup === 'wrong')      return getPhrase('syrup_wrong');
-  if (clues.sugar === 'sweeter')    return getPhrase('sugar_sweeter');
-  if (clues.sugar === 'less_sweet') return getPhrase('sugar_less_sweet');
-  if (clues.ice === 'more_ice')     return getPhrase('ice_more_ice');
-  if (clues.ice === 'less_ice')     return getPhrase('ice_less_ice');
+  // Collect all applicable wrong-ingredient pools, then pick one randomly.
+  // This prevents the same ingredient dominating when multiple are wrong.
+  const candidates = [];
+  if (clues.syrup === 'family')     candidates.push('syrup_family');
+  if (clues.tea === 'wrong')        candidates.push('tea_wrong');
+  if (clues.milk === 'wrong')       candidates.push('milk_wrong');
+  if (clues.syrup === 'wrong')      candidates.push('syrup_wrong');
+  if (clues.sugar === 'sweeter')    candidates.push('sugar_sweeter');
+  if (clues.sugar === 'less_sweet') candidates.push('sugar_less_sweet');
+  if (clues.ice === 'more_ice')     candidates.push('ice_more_ice');
+  if (clues.ice === 'less_ice')     candidates.push('ice_less_ice');
 
-  const toppingGroup  = clues.toppings.find(t => t.state === 'group');
-  const toppingWrong  = clues.toppings.find(t => t.state === 'wrong');
-  if (toppingGroup)   return getPhrase('topping_group');
-  if (toppingWrong)   return getPhrase('topping_wrong');
+  const toppingGroup = clues.toppings.find(t => t.state === 'group');
+  const toppingWrong = clues.toppings.find(t => t.state === 'wrong');
+  if (toppingGroup) candidates.push('topping_group');
+  if (toppingWrong) candidates.push('topping_wrong');
+
+  if (candidates.length > 0) {
+    const poolKey = candidates[Math.floor(Math.random() * candidates.length)];
+    return getPhrase(poolKey);
+  }
 
   // All correct (shouldn't reach here after win already handled, but just in case)
   const correctCount = [
