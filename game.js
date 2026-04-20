@@ -54,7 +54,7 @@ const TOPPINGS = [
   { id: 'jelly_strawberry',  label: 'Jelly: Strawberry',   group: 'jelly',   unlocksAt: 6 },
 ];
 
-const MAX_GUESSES = 7;
+const MAX_GUESSES = 5;
 
 const LEVELS = [
   { level: 1, toppingSlots: 1 },
