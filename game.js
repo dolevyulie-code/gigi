@@ -382,9 +382,9 @@ function getOrCreateSessionSeed() {
   return seed;
 }
 
-function getDailyAnswer(level) {
+function getDailyAnswer(level, retryAttempt = 0) {
   const sessionSeed = getOrCreateSessionSeed();
-  const baseSeed = hashString(sessionSeed + ':' + level);
+  const baseSeed = hashString(sessionSeed + ':' + level + ':' + retryAttempt);
   let attempt = 0;
   while (true) {
     const rng = mulberry32(baseSeed + attempt);
@@ -773,6 +773,7 @@ const state = {
   guesses:       [],   // [{recipe, clues}]
   solved:        false,
   failed:        false,
+  retryAttempt:  0,
   usedPhrases:   {},   // { poolKey: Set<index> }
   current: {
     tea:      null,
@@ -1077,7 +1078,7 @@ function updateToppingWarning() {
     header?.setAttribute('aria-invalid', 'true');
     header?.setAttribute('aria-describedby', 'toppings-hint-closed');
     if (hint) {
-      hint.innerHTML = `${warningIcon()} Pick exactly 1 topping`;
+      hint.innerHTML = `${warningIcon()} Pick exactly ${cfg.toppingSlots} topping${cfg.toppingSlots > 1 ? 's' : ''}`;
       hint.classList.remove('hidden');
     }
   }
@@ -1580,7 +1581,6 @@ function submitGuess() {
     document.querySelectorAll('.guess-row').forEach((r, i) => {
       if (i > 0) r.classList.add('old');
     });
-    updateGuessCounter();
   }, 500);
 
   // ── Phase 4: Settle (1070ms — after shake completes: 350 + 720) ──
@@ -1616,6 +1616,7 @@ function submitGuess() {
   // ── Finalize: state updates (2050ms) ──
   setTimeout(() => {
     state.guesses.push({ recipe: finalRecipe, clues });
+    updateGuessCounter();
 
     if (won) {
       state.solved = true;
@@ -1652,8 +1653,9 @@ function submitGuess() {
 }
 
 function updateGuessCounter() {
+  const current = Math.min(state.guesses.length + 1, MAX_GUESSES);
   document.getElementById('guess-counter').textContent =
-    `${state.guesses.length} / ${MAX_GUESSES}`;
+    `${current} / ${MAX_GUESSES}`;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1756,7 +1758,6 @@ function showEndState(won) {
     document.getElementById('complete-speech-text').textContent = pickGigiLine('gameComplete');
     const totalGuesses = getTotalGuesses();
     document.getElementById('stat-guesses').textContent = totalGuesses ?? '—';
-    document.getElementById('stat-hints').textContent = '—';
     popInThen(popup, 'gigi-hop');
   }
 }
@@ -1773,6 +1774,7 @@ function advanceLevel() {
   document.getElementById('end-overlay').classList.add('hidden');
 
   // Reset game state for new level
+  state.retryAttempt = 0;
   state.answer = getDailyAnswer(state.level);
   state.guesses = [];
   state.solved  = false;
@@ -1813,11 +1815,12 @@ function restartGame() {
   localStorage.setItem('gigi_level', '1');
   localStorage.removeItem('gigi_total_guesses');
 
-  state.level   = 1;
-  state.guesses = [];
-  state.solved  = false;
-  state.failed  = false;
-  state.answer  = getDailyAnswer(1);
+  state.level        = 1;
+  state.retryAttempt = 0;
+  state.guesses      = [];
+  state.solved       = false;
+  state.failed       = false;
+  state.answer       = getDailyAnswer(1);
   state.current = { tea: null, milk: null, syrup: null, sugar: '50%', ice: 'regular', toppings: [] };
   resetPhrases();
 
@@ -1836,6 +1839,8 @@ function restartGame() {
 function retryLevel() {
   document.getElementById('end-overlay').classList.add('hidden');
 
+  state.retryAttempt++;
+  state.answer  = getDailyAnswer(state.level, state.retryAttempt);
   state.guesses = [];
   state.solved  = false;
   state.failed  = false;
@@ -1843,7 +1848,6 @@ function retryLevel() {
     tea: null, milk: null, syrup: null,
     sugar: '50%', ice: 'regular', toppings: [],
   };
-  // answer stays the same — same date + level seed
   resetPhrases();
 
   document.getElementById('history-rows').innerHTML = '';
