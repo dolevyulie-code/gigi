@@ -866,9 +866,10 @@ function getSaveKey(level) {
 function saveState() {
   const key = getSaveKey(state.level);
   const data = {
-    guesses: state.guesses,
-    solved:  state.solved,
-    failed:  state.failed,
+    guesses:      state.guesses,
+    solved:       state.solved,
+    failed:       state.failed,
+    retryAttempt: state.retryAttempt,
   };
   localStorage.setItem(key, JSON.stringify(data));
   localStorage.setItem('gigi_level', String(state.level));
@@ -879,29 +880,34 @@ function loadState() {
   if (storedLevel) state.level = parseInt(storedLevel, 10) || 1;
   if (state.level < 1 || state.level > 6) state.level = 1;
 
-  state.date   = getTodayDateString();
-  state.answer = getDailyAnswer(state.level);
+  state.date = getTodayDateString();
 
-  const key  = getSaveKey(state.level);
-  const raw  = localStorage.getItem(key);
+  const key = getSaveKey(state.level);
+  const raw = localStorage.getItem(key);
   if (raw) {
     const saved = JSON.parse(raw);
     // Never restore a failed state — player always gets a fresh try on reload
     if (saved.failed) {
+      // Carry retryAttempt forward so reload after failure gives a different answer
+      state.retryAttempt = (saved.retryAttempt || 0) + 1;
       localStorage.removeItem(key);
       state.guesses = [];
       state.solved  = false;
       state.failed  = false;
     } else {
+      state.retryAttempt = saved.retryAttempt || 0;
       state.guesses = saved.guesses || [];
       state.solved  = saved.solved  || false;
       state.failed  = false;
     }
   } else {
+    state.retryAttempt = 0;
     state.guesses = [];
     state.solved  = false;
     state.failed  = false;
   }
+
+  state.answer = getDailyAnswer(state.level, state.retryAttempt);
 
   resetPhrases();
 
