@@ -439,11 +439,13 @@ body {
 .chip[data-cat="ice"].selected      { background: var(--cat-ice); }
 .chip[data-cat="toppings"].selected { background: var(--cat-topping); }
 
-/* Syrup family shading — wine-dark vs vivid magenta */
-.chip[data-cat="syrup"][data-family="needs_milk"]          { color: #6B0F3A; }
-.chip[data-cat="syrup"][data-family="needs_milk"].selected  { background: #6B0F3A; }
-.chip[data-cat="syrup"][data-family="no_milk"]             { color: #CC3AAE; }
-.chip[data-cat="syrup"][data-family="no_milk"].selected     { background: #CC3AAE; }
+/* Syrup family shading — milk-based (wine-dark) · fruit (magenta) · floral (purple) */
+.chip[data-cat="syrup"][data-family="milk_based"]           { color: #6B0F3A; }
+.chip[data-cat="syrup"][data-family="milk_based"].selected  { background: #6B0F3A; }
+.chip[data-cat="syrup"][data-family="fruit"]                { color: #CC3AAE; }
+.chip[data-cat="syrup"][data-family="fruit"].selected       { background: #CC3AAE; }
+.chip[data-cat="syrup"][data-family="floral"]               { color: #6030A8; }
+.chip[data-cat="syrup"][data-family="floral"].selected      { background: #6030A8; }
 
 /* Topping group shading — dark forest / bright green / teal */
 .topping-check-item[data-family="pearl"]   { color: #1A5230; }

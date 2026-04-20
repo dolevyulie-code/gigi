@@ -20,15 +20,15 @@ const MILKS = [
 
 const SYRUPS = [
   { id: 'mango',       label: 'Mango',         family: 'fruit',    unlocksAt: 1, milkRule: 'flexible'       },
-  { id: 'brown_sugar', label: 'Brown Sugar',   family: 'creamy',   unlocksAt: 1, milkRule: 'needs_milk'     },
+  { id: 'brown_sugar', label: 'Brown Sugar',   family: 'milk_based', unlocksAt: 1, milkRule: 'needs_milk'     },
   { id: 'strawberry',  label: 'Strawberry',    family: 'fruit',    unlocksAt: 1, milkRule: 'flexible'       },
   { id: 'osmanthus',   label: 'Osmanthus',     family: 'floral',   unlocksAt: 1, milkRule: 'needs_tea_milk' },
   { id: 'lychee',      label: 'Lychee',        family: 'fruit',    unlocksAt: 1, milkRule: 'flexible'       },
   { id: 'peach',       label: 'Peach',         family: 'fruit',    unlocksAt: 2, milkRule: 'flexible'       },
-  { id: 'thai',        label: 'Thai',          family: 'creamy',   unlocksAt: 2, milkRule: 'needs_milk'     },
+  { id: 'thai',        label: 'Thai',          family: 'milk_based', unlocksAt: 2, milkRule: 'needs_milk'     },
   { id: 'rose',        label: 'Rose',          family: 'floral',   unlocksAt: 4, milkRule: 'flexible'       },
-  { id: 'matcha',      label: 'Matcha',        family: 'creamy',   unlocksAt: 4, milkRule: 'needs_milk'     },
-  { id: 'taro',        label: 'Taro',          family: 'creamy',   unlocksAt: 5, milkRule: 'needs_milk'     },
+  { id: 'matcha',      label: 'Matcha',        family: 'milk_based', unlocksAt: 4, milkRule: 'needs_milk'     },
+  { id: 'taro',        label: 'Taro',          family: 'milk_based', unlocksAt: 5, milkRule: 'needs_milk'     },
   { id: 'passion',     label: 'Passion Fruit', family: 'fruit',    unlocksAt: 6, milkRule: 'never_milk'     },
 ];
 
@@ -130,15 +130,15 @@ function scoreAxis1(recipe) {
 
   if (hasTea && !hasMilk && hasSyrup) {
     // Tea + Syrup
-    if (family === 'fruit')    return 28;
-    if (family === 'floral')   return 25;
-    if (family === 'creamy')   return -10;
-    if (family === 'roasted')  return 10;
+    if (family === 'fruit')      return 28;
+    if (family === 'floral')     return 25;
+    if (family === 'milk_based') return -10;
+    if (family === 'roasted')    return 10;
   }
 
   if (!hasTea && hasMilk && hasSyrup) {
     // Milk + Syrup
-    if (family === 'creamy')  return 30;
+    if (family === 'milk_based') return 30;
     if (family === 'fruit')   return 10;
     if (family === 'floral')  return 16;
     if (family === 'roasted') return 8;
@@ -146,7 +146,7 @@ function scoreAxis1(recipe) {
 
   if (hasTea && hasMilk && hasSyrup) {
     // Full combo
-    if (family === 'creamy')  return 28;
+    if (family === 'milk_based') return 28;
     if (family === 'fruit')   return 26;
     if (family === 'floral')  return 25;
     if (family === 'roasted') return 24;
@@ -158,11 +158,11 @@ function scoreAxis1(recipe) {
 // Axis 2 — Tea × syrup affinity (max 20)
 // Skipped (20 pts) if no tea or no syrup
 const TEA_SYRUP_AFFINITY = {
-  black:   { fruit: 16, creamy: 18, floral: 12, roasted: 17 },
-  green:   { fruit: 19, creamy:  8, floral: 18, roasted: 10 },
-  oolong:  { fruit: 14, creamy: 14, floral: 20, roasted: 15 },
-  jasmine: { fruit: 18, creamy:  7, floral: 19, roasted:  8 },
-  roasted: { fruit: -8, creamy: 20, floral:  9, roasted: 18 },
+  black:   { fruit: 16, milk_based: 18, floral: 12, roasted: 17 },
+  green:   { fruit: 19, milk_based:  8, floral: 18, roasted: 10 },
+  oolong:  { fruit: 14, milk_based: 14, floral: 20, roasted: 15 },
+  jasmine: { fruit: 18, milk_based:  7, floral: 19, roasted:  8 },
+  roasted: { fruit: -8, milk_based: 20, floral:  9, roasted: 18 },
 };
 
 function scoreAxis2(recipe) {
