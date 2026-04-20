@@ -316,8 +316,8 @@ body {
 .selector-row-header:hover  { background: #EDE4D8; }
 .selector-row-header.open   { background: #EDE4D8; border-radius: 10px 10px 0 0; border-color: #DDD0C0; }
 
-.selector-row-header-left  { display: flex; align-items: center; gap: 6px; }
-.selector-row-header-right { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.selector-row-header-left  { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
+.selector-row-header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
 .cat-dot {
   width: 8px;
@@ -327,21 +327,34 @@ body {
   flex-shrink: 0;
 }
 
+.selector-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
 .cat-name {
-  font-size: .78rem;
-  font-weight: 700;
-  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
   white-space: nowrap;
 }
 
-.selector-summary {
-  font-size: .72rem;
-  color: var(--muted);
+.selector-value {
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 150px;
-  text-align: right;
+}
+.selector-value[data-empty="true"] {
+  font-style: italic;
+  color: var(--muted);
 }
 
 .selector-chevron {
@@ -534,14 +547,30 @@ body {
 }
 .chip-pulse { animation: chip-pulse .4s ease; }
 
-/* ── Validation error ────────────────────────────────────────── */
-#validation-error {
-  font-size: .8rem;
-  color: var(--coral);
-  font-weight: 600;
-  padding: 4px 0 2px;
-  min-height: 22px;
+/* ── Inline amber warning system ────────────────────────────── */
+
+/* Change 2: Tea/Milk/Syrup group */
+#base-group { border-radius: 10px; }
+#base-group.warn { background: #FAEEDA; padding: 4px 6px 2px; border-radius: 10px; }
+#base-group .selector-row + .selector-row { margin-top: 4px; }
+
+.group-hint {
+  font-size: 11px;
+  color: #854F0B;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 6px;
 }
+.group-hint.hidden { display: none; }
+
+/* Change 3: Toppings warning (open or closed) */
+#toppings-group { border-radius: 10px; }
+#toppings-group.warn { background: #FAEEDA; padding: 4px 6px 2px; border-radius: 10px; }
+
+.selector-row-header.warn { border-color: #EF9F27 !important; }
+
 
 /* ── Submit button ───────────────────────────────────────────── */
 #submit-btn {

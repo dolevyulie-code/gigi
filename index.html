@@ -44,14 +44,19 @@
   <div id="selectors-col">
     <p class="section-label">Make Gigi's drink</p>
 
-    <div id="selector-tea"    class="selector-row" data-cat="tea"></div>
-    <div id="selector-milk"   class="selector-row" data-cat="milk"></div>
-    <div id="selector-syrup"  class="selector-row" data-cat="syrup"></div>
+    <div id="base-group">
+      <div id="selector-tea"   class="selector-row" data-cat="tea"></div>
+      <div id="selector-milk"  class="selector-row" data-cat="milk"></div>
+      <div id="selector-syrup" class="selector-row" data-cat="syrup"></div>
+      <div id="base-group-hint" class="group-hint hidden" aria-live="polite"></div>
+    </div>
     <div id="selector-sugar"  class="selector-row" data-cat="sugar"></div>
     <div id="selector-ice"    class="selector-row" data-cat="ice"></div>
-    <div id="selector-toppings" class="selector-row" data-cat="toppings"></div>
+    <div id="toppings-group">
+      <div id="selector-toppings" class="selector-row" data-cat="toppings"></div>
+      <div id="toppings-hint-closed" class="group-hint hidden" aria-live="polite"></div>
+    </div>
 
-    <div id="validation-error" class="hidden"></div>
     <button id="submit-btn" disabled>Serve to Gigi</button>
   </div>
 

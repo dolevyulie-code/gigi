@@ -954,6 +954,10 @@ function updateCupVisual(current) {
    SECTION 11 — UI: Selector Rows
 ═══════════════════════════════════════════════════════════════ */
 
+function warningIcon() {
+  return '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><circle cx="6" cy="6" r="5.5" stroke="currentColor"/><path d="M6 3v3.5M6 8.5v.5" stroke="currentColor" stroke-linecap="round"/></svg>';
+}
+
 const CAT_DOT_COLORS = {
   tea:      'var(--cat-tea)',
   milk:     'var(--cat-milk)',
@@ -975,17 +979,17 @@ const ALL_CATS = ['tea', 'milk', 'syrup', 'sugar', 'ice', 'toppings'];
 function getSummaryText(cat) {
   const cfg = getLevelConfig(state.level);
   if (cat === 'tea') {
-    if (!state.current.tea) return 'None';
+    if (!state.current.tea) return 'None selected';
     const t = TEAS.find(x => x.id === state.current.tea);
     return t ? t.label : state.current.tea;
   }
   if (cat === 'milk') {
-    if (!state.current.milk) return 'None';
+    if (!state.current.milk) return 'None selected';
     const m = MILKS.find(x => x.id === state.current.milk);
     return m ? m.label : state.current.milk;
   }
   if (cat === 'syrup') {
-    if (!state.current.syrup) return 'None';
+    if (!state.current.syrup) return 'None selected';
     const s = SYRUPS.find(x => x.id === state.current.syrup);
     return s ? s.label : state.current.syrup;
   }
@@ -994,7 +998,7 @@ function getSummaryText(cat) {
   if (cat === 'toppings') {
     const count = state.current.toppings.length;
     const max = cfg.toppingSlots;
-    if (count === 0) return `None  (0/${max})`;
+    if (count === 0) return 'None selected';
     const labels = state.current.toppings.map(tid => {
       const t = TOPPINGS.find(x => x.id === tid);
       return t ? t.label : tid;
@@ -1026,6 +1030,50 @@ function toggleAccordion(cat, forceClose) {
     list.classList.remove('chip-list--collapsed');
     header.classList.add('open');
   }
+  updateToppingWarning();
+}
+
+function updateBaseGroupHint() {
+  const c = state.current;
+  const count = (c.tea !== null ? 1 : 0) + (c.milk !== null ? 1 : 0) + (c.syrup !== null ? 1 : 0);
+  const group = document.getElementById('base-group');
+  const hint  = document.getElementById('base-group-hint');
+  if (!group || !hint) return;
+  if (count >= 2) {
+    group.classList.remove('warn');
+    hint.classList.add('hidden');
+  } else {
+    group.classList.add('warn');
+    hint.innerHTML = `${warningIcon()} Pick at least 2 of Tea, Milk, or Syrup (${count} chosen)`;
+    hint.classList.remove('hidden');
+  }
+}
+
+function updateToppingWarning() {
+  const cfg    = getLevelConfig(state.level);
+  const count  = state.current.toppings.length;
+  const isValid = count === cfg.toppingSlots;
+
+  const group  = document.getElementById('toppings-group');
+  const header = document.querySelector('#selector-toppings .selector-row-header');
+  const hint   = document.getElementById('toppings-hint-closed');
+
+  if (isValid) {
+    group?.classList.remove('warn');
+    header?.classList.remove('warn');
+    header?.removeAttribute('aria-invalid');
+    header?.removeAttribute('aria-describedby');
+    hint?.classList.add('hidden');
+  } else {
+    group?.classList.add('warn');
+    header?.classList.add('warn');
+    header?.setAttribute('aria-invalid', 'true');
+    header?.setAttribute('aria-describedby', 'toppings-hint-closed');
+    if (hint) {
+      hint.innerHTML = `${warningIcon()} Pick exactly 1 topping`;
+      hint.classList.remove('hidden');
+    }
+  }
 }
 
 function buildSelectorRow(cat, level) {
@@ -1043,18 +1091,21 @@ function buildSelectorRow(cat, level) {
   dot.className = 'cat-dot';
   dot.style.background = CAT_DOT_COLORS[cat];
   left.appendChild(dot);
+  const textCol = document.createElement('div');
+  textCol.className = 'selector-row-text';
   const nameSpan = document.createElement('span');
   nameSpan.className = 'cat-name';
   nameSpan.textContent = cat === 'toppings' ? 'Toppings' : cat.charAt(0).toUpperCase() + cat.slice(1);
-  left.appendChild(nameSpan);
+  textCol.appendChild(nameSpan);
+  const summary = document.createElement('span');
+  summary.className = 'selector-value';
+  summary.id = `summary-${cat}`;
+  textCol.appendChild(summary);
+  left.appendChild(textCol);
   header.appendChild(left);
 
   const right = document.createElement('div');
   right.className = 'selector-row-header-right';
-  const summary = document.createElement('span');
-  summary.className = 'selector-summary';
-  summary.id = `summary-${cat}`;
-  right.appendChild(summary);
   const chevron = document.createElement('span');
   chevron.className = 'selector-chevron';
   right.appendChild(chevron);
@@ -1092,8 +1143,10 @@ function buildChips(cat, level) {
   } else if (cat === 'ice') {
     for (const i of ICE_LEVELS) addChip(list, 'ice', i, ICE_LABELS[i]);
   } else if (cat === 'toppings') {
+    // 1. Topping checkbox items
     for (const t of getUnlocked(TOPPINGS, level)) addToppingCheckbox(list, t.id, t.label, t.group);
-    // Hint lives inside the chip list so it shares the panel border
+
+    // 2. Count hint — at-capacity confirmation only
     const hint = document.createElement('div');
     hint.id = 'topping-hint';
     list.appendChild(hint);
@@ -1166,7 +1219,7 @@ function refreshChipState(cat) {
     chip.classList.toggle('selected', selected);
   });
 
-  // Update topping hint text
+  // Update topping hint text — at-capacity confirmation only
   if (cat === 'toppings') {
     const hint = document.getElementById('topping-hint');
     const cfg  = getLevelConfig(state.level);
@@ -1178,7 +1231,7 @@ function refreshChipState(cat) {
         hint.classList.add('full');
         hint.classList.remove('flash');
       } else {
-        hint.textContent = `Pick ${max} topping${max > 1 ? 's' : ''}`;
+        hint.textContent = '';
         hint.classList.remove('full', 'flash');
       }
     }
@@ -1186,7 +1239,14 @@ function refreshChipState(cat) {
 
   // Update summary text in accordion header
   const summaryEl = document.getElementById(`summary-${cat}`);
-  if (summaryEl) summaryEl.textContent = getSummaryText(cat);
+  if (summaryEl) {
+    summaryEl.textContent = getSummaryText(cat);
+    const isEmpty = (cat === 'tea'      && state.current.tea === null)
+                 || (cat === 'milk'     && state.current.milk === null)
+                 || (cat === 'syrup'    && state.current.syrup === null)
+                 || (cat === 'toppings' && state.current.toppings.length === 0);
+    summaryEl.dataset.empty = isEmpty ? 'true' : 'false';
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1261,18 +1321,11 @@ function onChipClick(cat, value) {
 
 function onSelectionChange() {
   updateCupVisual(state.current);
+  updateBaseGroupHint();
+  updateToppingWarning();
 
   const { error } = validateSelection(state.current, state.level);
-  const errEl = document.getElementById('validation-error');
-  if (error) {
-    errEl.textContent = error;
-    errEl.classList.remove('hidden');
-    document.getElementById('submit-btn').disabled = true;
-  } else {
-    errEl.textContent = '';
-    errEl.classList.add('hidden');
-    document.getElementById('submit-btn').disabled = false;
-  }
+  document.getElementById('submit-btn').disabled = !!error;
 }
 
 /* ═══════════════════════════════════════════════════════════════
