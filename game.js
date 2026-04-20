@@ -19,17 +19,17 @@ const MILKS = [
 ];
 
 const SYRUPS = [
-  { id: 'mango',       label: 'Mango',         family: 'no_milk',    unlocksAt: 1, milkRule: 'flexible'       },
-  { id: 'brown_sugar', label: 'Brown Sugar',   family: 'needs_milk', unlocksAt: 1, milkRule: 'needs_milk'     },
-  { id: 'strawberry',  label: 'Strawberry',    family: 'no_milk',    unlocksAt: 1, milkRule: 'flexible'       },
-  { id: 'osmanthus',   label: 'Osmanthus',     family: 'needs_milk', unlocksAt: 1, milkRule: 'needs_tea_milk' },
-  { id: 'lychee',      label: 'Lychee',        family: 'no_milk',    unlocksAt: 1, milkRule: 'flexible'       },
-  { id: 'peach',       label: 'Peach',         family: 'no_milk',    unlocksAt: 2, milkRule: 'flexible'       },
-  { id: 'thai',        label: 'Thai',          family: 'needs_milk', unlocksAt: 2, milkRule: 'needs_milk'     },
-  { id: 'rose',        label: 'Rose',          family: 'no_milk',    unlocksAt: 4, milkRule: 'flexible'       },
-  { id: 'matcha',      label: 'Matcha',        family: 'needs_milk', unlocksAt: 4, milkRule: 'needs_milk'     },
-  { id: 'taro',        label: 'Taro',          family: 'needs_milk', unlocksAt: 5, milkRule: 'needs_milk'     },
-  { id: 'passion',     label: 'Passion Fruit', family: 'no_milk',    unlocksAt: 6, milkRule: 'never_milk'     },
+  { id: 'mango',       label: 'Mango',         family: 'fruit',    unlocksAt: 1, milkRule: 'flexible'       },
+  { id: 'brown_sugar', label: 'Brown Sugar',   family: 'creamy',   unlocksAt: 1, milkRule: 'needs_milk'     },
+  { id: 'strawberry',  label: 'Strawberry',    family: 'fruit',    unlocksAt: 1, milkRule: 'flexible'       },
+  { id: 'osmanthus',   label: 'Osmanthus',     family: 'floral',   unlocksAt: 1, milkRule: 'needs_tea_milk' },
+  { id: 'lychee',      label: 'Lychee',        family: 'fruit',    unlocksAt: 1, milkRule: 'flexible'       },
+  { id: 'peach',       label: 'Peach',         family: 'fruit',    unlocksAt: 2, milkRule: 'flexible'       },
+  { id: 'thai',        label: 'Thai',          family: 'creamy',   unlocksAt: 2, milkRule: 'needs_milk'     },
+  { id: 'rose',        label: 'Rose',          family: 'floral',   unlocksAt: 4, milkRule: 'flexible'       },
+  { id: 'matcha',      label: 'Matcha',        family: 'creamy',   unlocksAt: 4, milkRule: 'needs_milk'     },
+  { id: 'taro',        label: 'Taro',          family: 'creamy',   unlocksAt: 5, milkRule: 'needs_milk'     },
+  { id: 'passion',     label: 'Passion Fruit', family: 'fruit',    unlocksAt: 6, milkRule: 'never_milk'     },
 ];
 
 const SUGAR_LEVELS = ['0%', '25%', '50%', '75%', '100%'];
