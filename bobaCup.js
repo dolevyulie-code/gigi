@@ -280,6 +280,7 @@ window.BobaCup = (function () {
       liquids: [], pouringLayer: null, items: [],
       activeActionIdx: 0, actionStart: 0, pendingActions: []
     };
+    const blendState = { active: false, color: '#000', start: 0, duration: 250 };
     let animHandle = null;
     let idlePhase  = 0;
 
@@ -426,6 +427,24 @@ window.BobaCup = (function () {
       return 0;
     }
 
+    function computeBlend() {
+      if (animState.liquids.length === 0) return null;
+      const weights = { tea: 0.5, milk: 0.7, syrup: 3.0 };
+      let r2 = 0, g2 = 0, b2 = 0, total = 0;
+      for (const liq of animState.liquids) {
+        const w = weights[liq.key] || 1.0;
+        const n = parseInt(liq.color.replace('#', ''), 16);
+        const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+        r2 += r * r * w;  g2 += g * g * w;  b2 += b * b * w;
+        total += w;
+      }
+      if (total === 0) return null;
+      const r = Math.round(Math.sqrt(r2 / total));
+      const g = Math.round(Math.sqrt(g2 / total));
+      const b = Math.round(Math.sqrt(b2 / total));
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
     function startTimeline(actions) {
       animState.pendingActions  = actions;
       animState.activeActionIdx = 0;
@@ -552,6 +571,13 @@ window.BobaCup = (function () {
         </g>`;
       const shineSvg = `<path d="M 42 80 Q 40 160 48 240" stroke="#ffffff" stroke-width="4" fill="none" opacity="0.5" stroke-linecap="round"/>`;
 
+      let blendRectSvg = '';
+      if (blendState.active) {
+        const elapsed = performance.now() - blendState.start;
+        const opacity = easeOutCubic(Math.min(1, elapsed / blendState.duration));
+        blendRectSvg = `<rect x="20" y="${LIQ_TOP}" width="160" height="${LIQ_BOTTOM - LIQ_TOP}" fill="${blendState.color}" opacity="${opacity.toFixed(3)}" clip-path="url(#bcCupInside)"/>`;
+      }
+
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 320" width="100%" height="100%" role="img" aria-label="Boba drink preview">
   <defs>
     <clipPath id="bcCupInside"><path d="M 22 62 L 178 62 L 164 248 Q 164 254 158 254 L 42 254 Q 36 254 36 248 Z"/></clipPath>
@@ -560,6 +586,7 @@ window.BobaCup = (function () {
   ${strawSvg}
   <path d="${cupPath}" fill="${COLORS.cup}" stroke="${s}" stroke-width="2.2" stroke-linejoin="round"/>
   ${liq.body}
+  ${blendRectSvg}
   ${streamSvg}
   <g clip-path="url(#bcCupInside)">${toppingSvg}</g>
   ${shineSvg}
@@ -575,9 +602,18 @@ window.BobaCup = (function () {
     /* ── Public API ───────────────────────────────────────────── */
 
     function update(drinkState) {
-      state.tea    = drinkState.tea    || 'none';
-      state.milk   = drinkState.milk   || 'none';
-      state.syrup  = drinkState.syrup  || 'none';
+      const newTea   = drinkState.tea   || 'none';
+      const newMilk  = drinkState.milk  || 'none';
+      const newSyrup = drinkState.syrup || 'none';
+
+      // Clear blend when a liquid ingredient changes
+      if (blendState.active && (newTea !== state.tea || newMilk !== state.milk || newSyrup !== state.syrup)) {
+        blendState.active = false;
+      }
+
+      state.tea    = newTea;
+      state.milk   = newMilk;
+      state.syrup  = newSyrup;
       state.sugar  = drinkState.sugar  || '50';
       state.ice    = drinkState.ice    || 'regular';
       state.toppings = (drinkState.toppings || []).slice();
@@ -615,7 +651,20 @@ window.BobaCup = (function () {
     // Kick off the rAF loop so idle drift runs even before the first update
     animHandle = requestAnimationFrame(tick);
 
-    return { update, replay, destroy };
+    function startBlend(durationMs) {
+      const color = computeBlend();
+      if (!color) return;
+      blendState.active   = true;
+      blendState.color    = color;
+      blendState.duration = durationMs || 250;
+      blendState.start    = performance.now();
+    }
+
+    function clearBlend() {
+      blendState.active = false;
+    }
+
+    return { update, replay, destroy, startBlend, clearBlend };
   }
 
   return { mount };

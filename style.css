@@ -213,6 +213,82 @@ body {
   100% { transform: scale(1)   translateX(0);     opacity: 1; }
 }
 
+/* === SERVE ANIMATION === */
+
+/* Slower pop-in for post-serve reveal */
+#gigi-speech.serve-enter.gigi-speech--enter {
+  animation-duration: 0.65s;
+}
+
+/* Phase 1: Speech bubble dismiss — reverse of pop-in */
+@keyframes gigi-speech-dismiss {
+  from { transform: scale(1) translateX(0);       opacity: 1; }
+  to   { transform: scale(0.5) translateX(-20px); opacity: 0; }
+}
+#gigi-speech.dismissing {
+  animation: gigi-speech-dismiss 280ms ease-in forwards;
+  pointer-events: none;
+}
+
+/* Phase 2: Cup anticipation — lifts and tilts back */
+@keyframes cup-anticipate {
+  0%   { transform: translateY(0)    rotate(0deg);  }
+  100% { transform: translateY(-5px) rotate(-5deg); }
+}
+#cup-wrap.cup-anticipating {
+  animation: cup-anticipate 180ms ease-out forwards;
+  transform-origin: bottom center;
+}
+
+/* Phase 3: Cup shake — 4 oscillations, calm cocktail-shaker rhythm */
+@keyframes cup-shake {
+  0%   { transform: translateY(-5px) rotate(-5deg);                   }
+  10%  { transform: translateY(-4px) rotate(7deg)   translateX(2px);  }
+  22%  { transform: translateY(-5px) rotate(-7deg)  translateX(-2px); }
+  34%  { transform: translateY(-3px) rotate(8deg)   translateX(3px);  }
+  46%  { transform: translateY(-4px) rotate(-8deg)  translateX(-3px); }
+  58%  { transform: translateY(-3px) rotate(9deg)   translateX(3px);  }
+  70%  { transform: translateY(-4px) rotate(-9deg)  translateX(-3px); }
+  82%  { transform: translateY(-2px) rotate(6deg)   translateX(2px);  }
+  92%  { transform: translateY(-1px) rotate(-4deg)  translateX(-1px); }
+  100% { transform: translateY(0)    rotate(0deg);                     }
+}
+#cup-wrap.cup-shaking {
+  animation: cup-shake 720ms cubic-bezier(.42,0,.58,1) forwards;
+  transform-origin: bottom center;
+}
+
+/* Counter-skew on SVG container — liquid lags behind cup rotation */
+/* Phases inverted relative to cup-shake so liquid tilts opposite direction */
+@keyframes cup-slosh {
+  0%   { transform: skewX(0deg);  }
+  10%  { transform: skewX(3deg);  }
+  22%  { transform: skewX(-3deg); }
+  34%  { transform: skewX(4deg);  }
+  46%  { transform: skewX(-4deg); }
+  58%  { transform: skewX(4deg);  }
+  70%  { transform: skewX(-4deg); }
+  82%  { transform: skewX(3deg);  }
+  92%  { transform: skewX(-2deg); }
+  100% { transform: skewX(0deg);  }
+}
+#cup-svg-container.cup-sloshing {
+  animation: cup-slosh 720ms cubic-bezier(.42,0,.58,1) forwards;
+}
+
+/* Phase 4: Settle — snap back with slight overshoot */
+@keyframes cup-settle {
+  0%   { transform: rotate(0deg)  translateY(0);    }
+  30%  { transform: rotate(4deg)  translateY(-3px); }
+  60%  { transform: rotate(-2deg);                  }
+  80%  { transform: rotate(1deg);                   }
+  100% { transform: rotate(0deg)  translateY(0);    }
+}
+#cup-wrap.cup-settling {
+  animation: cup-settle 220ms ease-out forwards;
+  transform-origin: bottom center;
+}
+
 /* Idle float */
 @keyframes gigi-bob {
   0%, 100% { transform: translateY(0); }

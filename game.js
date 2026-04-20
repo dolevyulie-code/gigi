@@ -1425,7 +1425,7 @@ function prependGuessRow(recipe, clues, isOld) {
     }),
   ];
 
-  for (const { label, clue } of cols) {
+  cols.forEach(({ label, clue }, colIdx) => {
     const col = document.createElement('div');
     col.className = 'guess-col';
 
@@ -1433,10 +1433,13 @@ function prependGuessRow(recipe, clues, isOld) {
     labelEl.className = 'guess-col-label';
     labelEl.textContent = label;
 
+    const tileEl = buildClueTile(clue);
+    tileEl.style.animationDelay = `${colIdx * 100}ms`;
+
     col.appendChild(labelEl);
-    col.appendChild(buildClueTile(clue));
+    col.appendChild(tileEl);
     row.appendChild(col);
-  }
+  });
 
   container.prepend(row);
 }
@@ -1516,8 +1519,11 @@ function submitGuess() {
   const { error, roast } = validateSelection(state.current, state.level);
   if (error) return; // submit disabled, shouldn't happen
 
-  clearGigiPhrase();
+  // ── Lock button immediately ──
+  const btn = document.getElementById('submit-btn');
+  if (btn) btn.disabled = true;
 
+  // ── Pre-compute everything synchronously ──
   const recipe = {
     tea:      state.current.tea,
     milk:     state.current.milk,
@@ -1527,27 +1533,11 @@ function submitGuess() {
     toppings: state.current.toppings.slice(),
   };
 
-  const guessIndex = state.guesses.length;
-  const result     = evaluateGuess(recipe, state.answer, guessIndex);
-  const clues      = result;
-
-  // Use reordered recipe if first guess was reordered
+  const guessIndex  = state.guesses.length;
+  const result      = evaluateGuess(recipe, state.answer, guessIndex);
+  const clues       = result;
   const finalRecipe = result.reorderedGuess || recipe;
 
-  state.guesses.push({ recipe: finalRecipe, clues });
-
-  // Prepend to history + show headers
-  document.getElementById('history-headers').classList.remove('hidden');
-  prependGuessRow(finalRecipe, clues, false);
-  // Fade older rows
-  const rows = document.querySelectorAll('.guess-row');
-  rows.forEach((r, i) => {
-    if (i > 0) r.classList.add('old');
-  });
-
-  updateGuessCounter();
-
-  // Check win
   const won = clues.tea === 'correct'
     && clues.milk === 'correct'
     && clues.syrup === 'correct'
@@ -1555,44 +1545,110 @@ function submitGuess() {
     && clues.ice === 'correct'
     && clues.toppings.every(t => t.state === 'correct');
 
-  if (won) {
-    state.solved = true;
-    showGigiPhrase(getPhrase('win'), false);
-    playGigiAnimation('gigi-hop', '#gigi-header');
-    accumulateGuesses(state.guesses.length);
+  const phrase   = won ? getPhrase('win') : choosePhrase(clues, roast);
+  const isRoast  = won ? false : !!roast;
+  const gigiAnim = won ? 'gigi-hop' : 'gigi-shake';
+
+  // ── Phase 1: Dismiss current speech bubble (0ms) ──
+  const speechEl = document.getElementById('gigi-speech');
+  if (speechEl && !speechEl.classList.contains('hidden')) {
+    speechEl.classList.add('dismissing');
+    setTimeout(() => {
+      speechEl.classList.add('hidden');
+      speechEl.classList.remove('dismissing');
+    }, 280);
+  }
+
+  // ── Phase 2: Cup anticipation (150ms) ──
+  setTimeout(() => {
+    document.getElementById('cup-wrap').classList.add('cup-anticipating');
+  }, 150);
+
+  // ── Phase 3: Shake + counter-skew slosh (350ms) ──
+  setTimeout(() => {
+    const cupWrap = document.getElementById('cup-wrap');
+    const cupSvg  = document.getElementById('cup-svg-container');
+    cupWrap.classList.remove('cup-anticipating');
+    cupWrap.classList.add('cup-shaking');
+    cupSvg.classList.add('cup-sloshing');
+  }, 350);
+
+  // ── Phase 3b: Verdict reveal — prepend guess row, tiles stagger (500ms) ──
+  setTimeout(() => {
+    document.getElementById('history-headers').classList.remove('hidden');
+    prependGuessRow(finalRecipe, clues, false);
+    document.querySelectorAll('.guess-row').forEach((r, i) => {
+      if (i > 0) r.classList.add('old');
+    });
+    updateGuessCounter();
+  }, 500);
+
+  // ── Phase 4: Settle (1070ms — after shake completes: 350 + 720) ──
+  setTimeout(() => {
+    const cupWrap = document.getElementById('cup-wrap');
+    const cupSvg  = document.getElementById('cup-svg-container');
+    cupWrap.classList.remove('cup-shaking');
+    cupWrap.classList.add('cup-settling');
+    cupSvg.classList.remove('cup-sloshing');
+    cupWrap.addEventListener('animationend', () => cupWrap.classList.remove('cup-settling'), { once: true });
+  }, 1070);
+
+  // ── Phase 4b: Blend liquid color (1110ms) ──
+  setTimeout(() => {
+    if (cupInstance) cupInstance.startBlend(280);
+  }, 1110);
+
+  // ── Phase 5: Gigi reaction (1110ms) ──
+  setTimeout(() => {
+    playGigiAnimation(gigiAnim, '#gigi-header');
+  }, 1110);
+
+  // ── Phase 6: New speech bubble (1750ms — ~460ms pause after settle ends) ──
+  setTimeout(() => {
+    const speechEl = document.getElementById('gigi-speech');
+    if (speechEl) speechEl.classList.add('serve-enter');
+    showGigiPhrase(phrase, isRoast);
+    if (speechEl) {
+      speechEl.addEventListener('animationend', () => speechEl.classList.remove('serve-enter'), { once: true });
+    }
+  }, 1750);
+
+  // ── Finalize: state updates (2050ms) ──
+  setTimeout(() => {
+    state.guesses.push({ recipe: finalRecipe, clues });
+
+    if (won) {
+      state.solved = true;
+      accumulateGuesses(state.guesses.length);
+      saveState();
+      setTimeout(() => showEndState(true), 700);
+      return;
+    }
+
+    if (state.guesses.length >= MAX_GUESSES) {
+      state.failed = true;
+      // Don't persist failed state — clear progress so a reload gives a fresh try
+      localStorage.removeItem(getSaveKey(state.level));
+      setTimeout(() => showEndState(false), 1400);
+      return;
+    }
+
     saveState();
-    setTimeout(() => showEndState(true), 1200);
-    return;
-  }
 
-  // Choose Gigi's phrase
-  const phrase = choosePhrase(clues, roast);
-  showGigiPhrase(phrase, !!roast);
-  playGigiAnimation('gigi-shake', '#gigi-header');
-
-  // Check lose
-  if (state.guesses.length >= MAX_GUESSES) {
-    state.failed = true;
-    // Don't persist failed state — clear progress so a reload gives a fresh try
-    localStorage.removeItem(getSaveKey(state.level));
-    setTimeout(() => showEndState(false), 1400);
-    return;
-  }
-
-  saveState();
-
-  // Pre-fill current from this guess so player only changes what's wrong
-  state.current = {
-    tea:      finalRecipe.tea,
-    milk:     finalRecipe.milk,
-    syrup:    finalRecipe.syrup,
-    sugar:    finalRecipe.sugar,
-    ice:      finalRecipe.ice,
-    toppings: finalRecipe.toppings.slice(),
-  };
-  ['tea','milk','syrup','sugar','ice','toppings'].forEach(cat => refreshChipState(cat));
-  updateCupVisual(state.current);
-  onSelectionChange();
+    // Pre-fill current from this guess so player only changes what's wrong
+    state.current = {
+      tea:      finalRecipe.tea,
+      milk:     finalRecipe.milk,
+      syrup:    finalRecipe.syrup,
+      sugar:    finalRecipe.sugar,
+      ice:      finalRecipe.ice,
+      toppings: finalRecipe.toppings.slice(),
+    };
+    ['tea','milk','syrup','sugar','ice','toppings'].forEach(cat => refreshChipState(cat));
+    if (btn) btn.disabled = false;
+    updateCupVisual(state.current);
+    onSelectionChange();
+  }, 1400);
 }
 
 function updateGuessCounter() {
@@ -1737,6 +1793,7 @@ function advanceLevel() {
   document.getElementById('history-headers').classList.add('hidden');
 
   updateLevelPill();
+  if (cupInstance) cupInstance.clearBlend();
   updateCupVisual(state.current);
   onSelectionChange();
 }
@@ -1795,6 +1852,7 @@ function retryLevel() {
   buildUI(state.level);
   updateGuessCounter();
   clearGigiPhrase();
+  if (cupInstance) cupInstance.clearBlend();
   updateCupVisual(state.current);
   onSelectionChange();
 }
