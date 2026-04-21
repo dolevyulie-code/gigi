@@ -1726,13 +1726,9 @@ function showEndState(won) {
     popInThen(popup, 'gigi-hop');
 
   } else {
-    // ── Game complete popup ──
-    const popup = document.getElementById('popup-complete');
-    popup.classList.remove('hidden');
-    document.getElementById('complete-speech-text').textContent = pickGigiLine('gameComplete');
-    const totalGuesses = getTotalGuesses();
-    document.getElementById('stat-guesses').textContent = totalGuesses ?? '—';
-    popInThen(popup, 'gigi-hop');
+    // ── Game complete popup (async — leaderboard flow takes over) ──
+    handleGameComplete();
+    return;
   }
 }
 
@@ -1963,7 +1959,208 @@ function initGame() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 20 — Event listeners
+   SECTION 20 — Leaderboard
+═══════════════════════════════════════════════════════════════ */
+
+const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/69e7fe3b36566621a8d9f914';
+const JSONBIN_KEY = '$2a$10$vq0cpITGeQ29DxMP3vCS/OYjVCFPkYyWblOXZtBKh3aLkgymoC77a';
+
+async function fetchLeaderboard() {
+  try {
+    const res = await fetch(JSONBIN_URL + '/latest', {
+      headers: { 'X-Master-Key': JSONBIN_KEY },
+    });
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    return { scores: data.record.scores || [], error: false };
+  } catch {
+    return { scores: [], error: true };
+  }
+}
+
+async function saveLeaderboard(scores) {
+  try {
+    const res = await fetch(JSONBIN_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_KEY,
+      },
+      body: JSON.stringify({ scores }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function qualifiesForTop10(scores, guesses) {
+  if (scores.length < 10) return true;
+  return guesses < scores[9].guesses;
+}
+
+function insertScore(scores, name, guesses) {
+  const entry = { name, guesses, date: new Date().toISOString() };
+  const updated = [...scores, entry];
+  updated.sort((a, b) => a.guesses - b.guesses || new Date(a.date) - new Date(b.date));
+  return updated.slice(0, 10);
+}
+
+const MEDALS = ['🥇', '🥈', '🥉'];
+const ROW_CLASSES = ['lb-row--gold', 'lb-row--silver', 'lb-row--bronze'];
+
+function renderLeaderboardRows(scores, container, highlightName) {
+  container.innerHTML = '';
+  if (!scores || scores.length === 0) {
+    const el = document.createElement('p');
+    el.className = 'lb-empty';
+    el.textContent = 'No scores yet. Be the first!';
+    container.appendChild(el);
+    return;
+  }
+  scores.forEach((entry, i) => {
+    const isYou = highlightName && entry.name === highlightName;
+    const row = document.createElement('div');
+    row.className = 'lb-row ' + (ROW_CLASSES[i] || 'lb-row--plain') + (isYou ? ' lb-row--you' : '');
+
+    const medal = document.createElement('span');
+    medal.className = 'lb-medal';
+    medal.textContent = MEDALS[i] || '';
+
+    const rank = document.createElement('span');
+    rank.className = 'lb-rank';
+    rank.textContent = i >= 3 ? `#${i + 1}` : '';
+
+    const name = document.createElement('span');
+    name.className = 'lb-name';
+    name.textContent = entry.name;
+
+    if (isYou) {
+      const tag = document.createElement('span');
+      tag.className = 'lb-you-tag';
+      tag.textContent = 'YOU';
+      name.appendChild(document.createTextNode(' '));
+      name.appendChild(tag);
+    }
+
+    const guesses = document.createElement('span');
+    guesses.className = 'lb-guesses';
+    guesses.textContent = entry.guesses;
+
+    row.appendChild(medal);
+    row.appendChild(rank);
+    row.appendChild(name);
+    row.appendChild(guesses);
+    container.appendChild(row);
+  });
+}
+
+function promptLeaderboardName(totalGuesses) {
+  return new Promise(resolve => {
+    document.getElementById('entry-guess-count').textContent = totalGuesses;
+    const entryPopup = document.getElementById('popup-leaderboard-entry');
+    entryPopup.classList.remove('hidden');
+
+    const input = document.getElementById('leaderboard-name-input');
+    const charCount = document.getElementById('name-char-count');
+    input.value = '';
+    charCount.textContent = '0/10';
+
+    function onInput() {
+      charCount.textContent = input.value.length + '/10';
+    }
+    input.addEventListener('input', onInput);
+
+    function cleanup(name) {
+      input.removeEventListener('input', onInput);
+      submitBtn.removeEventListener('click', onSubmit);
+      skipBtn.removeEventListener('click', onSkip);
+      entryPopup.classList.add('hidden');
+      resolve(name || 'Anonymous');
+    }
+
+    const submitBtn = document.getElementById('leaderboard-submit-btn');
+    const skipBtn = document.getElementById('leaderboard-skip-btn');
+
+    function onSubmit() { cleanup(input.value.trim() || 'Anonymous'); }
+    function onSkip()   { cleanup('Anonymous'); }
+
+    submitBtn.addEventListener('click', onSubmit);
+    skipBtn.addEventListener('click', onSkip);
+  });
+}
+
+async function handleGameComplete() {
+  const alreadySubmitted = sessionStorage.getItem('gigi_lb_submitted');
+  const totalGuesses = getTotalGuesses();
+  const { scores, error } = await fetchLeaderboard();
+
+  let submittedName = null;
+
+  if (!error && !alreadySubmitted && qualifiesForTop10(scores, totalGuesses)) {
+    submittedName = await promptLeaderboardName(totalGuesses);
+    const updated = insertScore(scores, submittedName, totalGuesses);
+    const saved = await saveLeaderboard(updated);
+    if (saved) {
+      sessionStorage.setItem('gigi_lb_submitted', '1');
+      sessionStorage.setItem('gigi_lb_name', submittedName);
+    }
+  }
+
+  const popup = document.getElementById('popup-complete');
+  popup.classList.remove('hidden');
+  document.getElementById('complete-speech-text').textContent = pickGigiLine('gameComplete');
+  document.getElementById('stat-guesses').textContent = totalGuesses ?? '—';
+
+  const miniContainer = document.getElementById('mini-leaderboard-rows');
+  if (error) {
+    const p = document.createElement('p');
+    p.className = 'lb-error';
+    p.textContent = "Couldn't load leaderboard — check your connection.";
+    miniContainer.innerHTML = '';
+    miniContainer.appendChild(p);
+  } else {
+    const { scores: finalScores, error: err2 } = submittedName
+      ? await fetchLeaderboard()
+      : { scores, error: false };
+    renderLeaderboardRows(
+      (err2 ? scores : finalScores).slice(0, 3),
+      miniContainer,
+      sessionStorage.getItem('gigi_lb_name')
+    );
+  }
+
+  const gigiEl = popup.querySelector('.gigi-wrapper');
+  if (gigiEl) {
+    gigiEl.classList.remove('gigi-pop-in');
+    void gigiEl.offsetWidth;
+    gigiEl.classList.add('gigi-pop-in');
+    setTimeout(() => {
+      gigiEl.classList.remove('gigi-pop-in');
+      playGigiAnimation('gigi-hop', '#popup-complete .gigi-wrapper');
+    }, 450);
+  }
+}
+
+async function showFullLeaderboard() {
+  const container = document.getElementById('full-leaderboard-rows');
+  container.innerHTML = '<p class="lb-empty">Loading…</p>';
+  document.getElementById('leaderboard-overlay').classList.remove('hidden');
+
+  const { scores, error } = await fetchLeaderboard();
+  if (error) {
+    container.innerHTML = '<p class="lb-error">Couldn\'t load leaderboard — check your connection.</p>';
+  } else {
+    renderLeaderboardRows(scores, container, sessionStorage.getItem('gigi_lb_name'));
+  }
+}
+
+function closeFullLeaderboard() {
+  document.getElementById('leaderboard-overlay').classList.add('hidden');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 21 — Event listeners
 ═══════════════════════════════════════════════════════════════ */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2024,6 +2221,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Next level
   document.getElementById('next-level-btn').addEventListener('click', () => {
     advanceLevel();
+  });
+
+  // Leaderboard
+  document.getElementById('trophy-btn').addEventListener('click', showFullLeaderboard);
+  document.getElementById('close-lb-btn').addEventListener('click', closeFullLeaderboard);
+  document.getElementById('view-full-lb-btn').addEventListener('click', showFullLeaderboard);
+  document.getElementById('leaderboard-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('leaderboard-overlay')) closeFullLeaderboard();
   });
 
 });

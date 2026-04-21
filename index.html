@@ -19,6 +19,7 @@
     <span id="guess-counter">0 / 7</span>
     <button id="restart-btn" aria-label="Restart game">↺</button>
     <span id="level-pill">Level 1</span>
+    <button id="trophy-btn" aria-label="Leaderboard">🏆</button>
     <button id="info-btn" aria-label="How to play">ℹ</button>
   </span>
 </header>
@@ -202,8 +203,34 @@
     <div class="popup-buttons">
       <button id="restart-complete-btn" class="btn btn-primary btn-primary--orange">Play again</button>
     </div>
+    <hr class="leaderboard-divider" />
+    <p class="mini-lb-title">🏆 TOP 3 PLAYERS 🏆</p>
+    <div id="mini-leaderboard-rows"></div>
+    <button id="view-full-lb-btn" class="btn btn-secondary">View Full Leaderboard →</button>
   </div>
 
+  <!-- Leaderboard name entry popup -->
+  <div id="popup-leaderboard-entry" class="overlay-box popup-leaderboard-entry hidden">
+    <div class="complete-banner leaderboard-entry-banner">🎉 YOU MADE THE LEADERBOARD!</div>
+    <div class="leaderboard-trophy-icon">🏆</div>
+    <h2 class="leaderboard-entry-title">New High Score!</h2>
+    <p class="leaderboard-entry-sub">You finished in <strong id="entry-guess-count"></strong> guesses.<br>Add your name to the leaderboard?</p>
+    <input id="leaderboard-name-input" class="leaderboard-name-input" maxlength="10" placeholder="Your name" />
+    <div id="name-char-count" class="name-char-count">0/10</div>
+    <button id="leaderboard-submit-btn" class="btn btn-primary btn-primary--orange">Submit</button>
+    <button id="leaderboard-skip-btn" class="btn btn-secondary">Skip (save as Anonymous)</button>
+  </div>
+
+</div>
+
+<!-- ── Leaderboard overlay ───────────────────────────────────── -->
+<div id="leaderboard-overlay" class="overlay hidden">
+  <div class="overlay-box popup-leaderboard-full">
+    <button id="close-lb-btn" class="lb-close-btn" aria-label="Close leaderboard">✕</button>
+    <h2 class="leaderboard-full-title">🏆 Leaderboard</h2>
+    <p class="leaderboard-full-sub">FEWEST GUESSES TO WIN</p>
+    <div id="full-leaderboard-rows"></div>
+  </div>
 </div>
 
 </div><!-- /phone-frame -->
