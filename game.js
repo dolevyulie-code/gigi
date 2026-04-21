@@ -55,6 +55,7 @@ const TOPPINGS = [
 ];
 
 const MAX_GUESSES = 5;
+const TEST_MODE = new URLSearchParams(window.location.search).get('test') === '1';
 
 const LEVELS = [
   { level: 1, toppingSlots: 1 },
@@ -1834,6 +1835,35 @@ function retryLevel() {
   onSelectionChange();
 }
 
+function jumpToLevel(level) {
+  document.getElementById('end-overlay').classList.add('hidden');
+
+  state.level        = level;
+  state.retryAttempt = 0;
+  state.answer       = getDailyAnswer(state.level);
+  state.guesses      = [];
+  state.solved       = false;
+  state.failed       = false;
+  state.current      = { tea: null, milk: null, syrup: null, sugar: '50%', ice: 'regular', toppings: [] };
+  resetPhrases();
+
+  document.getElementById('history-rows').innerHTML = '';
+  document.getElementById('history-headers').classList.add('hidden');
+  document.getElementById('submit-btn').disabled = false;
+  buildUI(state.level);
+  updateLevelPill();
+  updateGuessCounter();
+  clearGigiPhrase();
+  if (cupInstance) cupInstance.clearBlend();
+  updateCupVisual(state.current);
+  onSelectionChange();
+
+  // Highlight active button
+  document.querySelectorAll('.test-level-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.level) === level);
+  });
+}
+
 function updateLevelPill() {
   document.getElementById('level-pill').textContent = `Level ${state.level}`;
   const headersEl = document.getElementById('history-headers');
@@ -1872,6 +1902,15 @@ function refreshAllChips() {
 
 function initGame() {
   loadState();
+
+  if (TEST_MODE) {
+    const bar = document.getElementById('test-bar');
+    bar.classList.remove('hidden');
+    document.querySelectorAll('.test-level-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.level) === state.level);
+      btn.addEventListener('click', () => jumpToLevel(parseInt(btn.dataset.level)));
+    });
+  }
 
   buildUI(state.level);
   updateLevelPill();

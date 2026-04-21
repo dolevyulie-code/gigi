@@ -63,6 +63,36 @@ body {
   #phone-scroll { height: auto; overflow: visible; }
 }
 
+/* ── Test bar ────────────────────────────────────────────────── */
+#test-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #1a1a2e;
+  border-bottom: 2px solid #e94560;
+}
+#test-label {
+  font-size: .65rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  color: #e94560;
+  margin-right: 4px;
+}
+.test-level-btn {
+  font-size: .75rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2a2a40;
+  color: #ccc;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.test-level-btn:hover { background: #e94560; color: #fff; border-color: #e94560; }
+.test-level-btn.active { background: #e94560; color: #fff; border-color: #e94560; }
+
 /* ── Header ──────────────────────────────────────────────────── */
 #header {
   display: flex;
