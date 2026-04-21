@@ -1634,6 +1634,7 @@ function submitGuess() {
 
     if (state.guesses.length >= MAX_GUESSES) {
       state.failed = true;
+      accumulateGuesses(state.guesses.length);
       // Don't persist failed state — clear progress so a reload gives a fresh try
       localStorage.removeItem(getSaveKey(state.level));
       setTimeout(() => showEndState(false), 1400);
@@ -1686,40 +1687,6 @@ function recipeToText(recipe) {
   return parts.join(', ');
 }
 
-function generateShareText() {
-  const guessCount = state.guesses.length;
-  const won  = state.solved;
-  const date = state.date;
-  const lvl  = state.level;
-
-  const tileMap = {
-    correct:    '🟩',
-    family:     '🟨',
-    group:      '🟨',
-    wrong:      '⬜',
-    sweeter:    '🟦',
-    more_ice:   '🟦',
-    less_sweet: '🟫',
-    less_ice:   '🟫',
-  };
-
-  const lines = [`Gigi ${date} · Level ${lvl} · ${won ? guessCount : 'X'}/${MAX_GUESSES}`, ''];
-
-  for (const { clues } of state.guesses) {
-    let row = '';
-    row += tileMap[clues.tea] || '⬜';
-    row += tileMap[clues.milk] || '⬜';
-    row += tileMap[clues.syrup] || '⬜';
-    row += tileMap[clues.sugar] || '⬜';
-    row += tileMap[clues.ice] || '⬜';
-    for (const tc of clues.toppings) {
-      row += tileMap[tc.state] || '⬜';
-    }
-    lines.push(row);
-  }
-
-  return lines.join('\n');
-}
 
 function showEndState(won) {
   // Hide all sub-popups
@@ -1992,27 +1959,6 @@ document.addEventListener('DOMContentLoaded', () => {
       overlay.classList.toggle('hidden');
     }
   });
-
-  // Share (all three popups use the same share logic)
-  function handleShare(btnId) {
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-      const text = generateShareText();
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-          const orig = btn.textContent;
-          btn.textContent = 'Copied!';
-          setTimeout(() => btn.textContent = orig, 1800);
-        }).catch(() => { prompt('Copy this:', text); });
-      } else {
-        prompt('Copy this:', text);
-      }
-    });
-  }
-  handleShare('share-btn');
-  handleShare('share-btn-success');
-  handleShare('share-btn-complete');
 
   // Play again (game complete popup)
   document.getElementById('restart-complete-btn').addEventListener('click', () => {
