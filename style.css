@@ -92,6 +92,7 @@ body {
 }
 .test-level-btn:hover { background: #e94560; color: #fff; border-color: #e94560; }
 .test-level-btn.active { background: #e94560; color: #fff; border-color: #e94560; }
+#test-answer { font-size: .7rem; color: #aaa; margin-left: 6px; font-style: italic; }
 
 /* ── Header ──────────────────────────────────────────────────── */
 #header {

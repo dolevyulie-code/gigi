@@ -1835,6 +1835,11 @@ function retryLevel() {
   onSelectionChange();
 }
 
+function updateTestAnswer() {
+  const el = document.getElementById('test-answer');
+  if (el) el.textContent = '→ ' + recipeToText(state.answer);
+}
+
 function jumpToLevel(level) {
   document.getElementById('end-overlay').classList.add('hidden');
 
@@ -1862,6 +1867,7 @@ function jumpToLevel(level) {
   document.querySelectorAll('.test-level-btn').forEach(btn => {
     btn.classList.toggle('active', parseInt(btn.dataset.level) === level);
   });
+  updateTestAnswer();
 }
 
 function updateLevelPill() {
@@ -1910,6 +1916,7 @@ function initGame() {
       btn.classList.toggle('active', parseInt(btn.dataset.level) === state.level);
       btn.addEventListener('click', () => jumpToLevel(parseInt(btn.dataset.level)));
     });
+    updateTestAnswer();
   }
 
   buildUI(state.level);
