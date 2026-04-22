@@ -101,6 +101,8 @@ const GIGI_DIALOGUE = {
 
 const gigiLastShown = { failure: -1, levelSuccess: -1, gameComplete: -1 };
 
+const TIER_LABELS = { cold: 'Keep trying', warm: 'On track', hot: 'So close', win: 'Perfect' };
+
 function getUnlocked(list, level) {
   return list.filter(x => x.unlocksAt <= level);
 }
@@ -1410,11 +1412,48 @@ function buildClueTile(state_) {
   return tile;
 }
 
+function calculateHeatScore(recipe, answer) {
+  const axes = ['tea', 'milk', 'syrup', 'sugar', 'ice'];
+  let score = axes.filter(ax => recipe[ax] === answer[ax]).length;
+  const n = answer.toppings.length;
+  const correctCount = recipe.toppings.filter(t => answer.toppings.includes(t)).length;
+  score += correctCount / n;
+  const total = axes.length + 1; // 5 base axes + 1 toppings axis
+  return { score, total, pct: (score / total) * 100, correctToppings: correctCount, n };
+}
+
+function tierFor(pct) {
+  if (pct >= 100) return 'win';
+  if (pct >= 75)  return 'hot';
+  if (pct >= 50)  return 'warm';
+  return 'cold';
+}
+
 function prependGuessRow(recipe, clues, isOld) {
   const container = document.getElementById('history-rows');
 
+  const { total, pct, correctToppings, n } = calculateHeatScore(recipe, state.answer);
+  const tier = tierFor(pct);
+  const exactAxes = ['tea', 'milk', 'syrup', 'sugar', 'ice'].filter(ax => recipe[ax] === state.answer[ax]).length;
+  const wholeScore = exactAxes + correctToppings / n;
+  const displayScore = Number.isInteger(wholeScore)
+    ? `${wholeScore}/${total}`
+    : `${wholeScore.toFixed(1)}/${total}`;
+
   const row = document.createElement('div');
-  row.className = 'guess-row' + (isOld ? ' old' : '');
+  row.className = 'guess-row' + (isOld ? ' old' : '') + ` ${tier}`;
+
+  const indicator = document.createElement('div');
+  indicator.className = 'tier-indicator';
+  const chip = document.createElement('span');
+  chip.className = 'score-chip';
+  chip.textContent = displayScore;
+  const tierLbl = document.createElement('span');
+  tierLbl.className = 'tier-label';
+  tierLbl.textContent = TIER_LABELS[tier];
+  indicator.appendChild(chip);
+  indicator.appendChild(tierLbl);
+  row.appendChild(indicator);
 
   const teaObj   = recipe.tea   ? TEAS.find(t => t.id === recipe.tea)     : null;
   const milkObj  = recipe.milk  ? MILKS.find(m => m.id === recipe.milk)   : null;
