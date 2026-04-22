@@ -1829,6 +1829,7 @@ function retryLevel() {
   if (cupInstance) cupInstance.clearBlend();
   updateCupVisual(state.current);
   onSelectionChange();
+  updateTestAnswer();
 }
 
 function updateTestAnswer() {
