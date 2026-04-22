@@ -1780,6 +1780,8 @@ function restartGame() {
       localStorage.removeItem(`gigi_${oldSeed}_L${l}`);
     }
   }
+  sessionStorage.removeItem('gigi_lb_submitted');
+  sessionStorage.removeItem('gigi_lb_entry_id');
   // Generate a fresh session seed so all levels get new drinks
   localStorage.setItem('gigi_session_seed', String(Math.floor(Math.random() * 2147483647) + 1));
   localStorage.setItem('gigi_level', '1');
@@ -2001,16 +2003,16 @@ function qualifiesForTop10(scores, guesses) {
 }
 
 function insertScore(scores, name, guesses) {
-  const entry = { name, guesses, date: new Date().toISOString() };
+  const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2), name, guesses, date: new Date().toISOString() };
   const updated = [...scores, entry];
   updated.sort((a, b) => a.guesses - b.guesses || new Date(a.date) - new Date(b.date));
-  return updated.slice(0, 10);
+  return { scores: updated.slice(0, 10), entryId: entry.id };
 }
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 const ROW_CLASSES = ['lb-row--gold', 'lb-row--silver', 'lb-row--bronze'];
 
-function renderLeaderboardRows(scores, container, highlightName) {
+function renderLeaderboardRows(scores, container, highlightId) {
   container.innerHTML = '';
   if (!scores || scores.length === 0) {
     const el = document.createElement('p');
@@ -2020,7 +2022,7 @@ function renderLeaderboardRows(scores, container, highlightName) {
     return;
   }
   scores.forEach((entry, i) => {
-    const isYou = highlightName && entry.name === highlightName;
+    const isYou = highlightId && entry.id === highlightId;
     const row = document.createElement('div');
     row.className = 'lb-row ' + (ROW_CLASSES[i] || 'lb-row--plain') + (isYou ? ' lb-row--you' : '');
 
@@ -2100,11 +2102,11 @@ async function handleGameComplete() {
 
   if (!error && !alreadySubmitted && qualifiesForTop10(scores, totalGuesses)) {
     submittedName = await promptLeaderboardName(totalGuesses);
-    const updated = insertScore(scores, submittedName, totalGuesses);
+    const { scores: updated, entryId } = insertScore(scores, submittedName, totalGuesses);
     const saved = await saveLeaderboard(updated);
     if (saved) {
       sessionStorage.setItem('gigi_lb_submitted', '1');
-      sessionStorage.setItem('gigi_lb_name', submittedName);
+      sessionStorage.setItem('gigi_lb_entry_id', entryId);
     }
   }
 
@@ -2127,7 +2129,7 @@ async function handleGameComplete() {
     renderLeaderboardRows(
       (err2 ? scores : finalScores).slice(0, 3),
       miniContainer,
-      sessionStorage.getItem('gigi_lb_name')
+      sessionStorage.getItem('gigi_lb_entry_id')
     );
   }
 
@@ -2152,7 +2154,7 @@ async function showFullLeaderboard() {
   if (error) {
     container.innerHTML = '<p class="lb-error">Couldn\'t load leaderboard — check your connection.</p>';
   } else {
-    renderLeaderboardRows(scores, container, sessionStorage.getItem('gigi_lb_name'));
+    renderLeaderboardRows(scores, container, sessionStorage.getItem('gigi_lb_entry_id'));
   }
 }
 
