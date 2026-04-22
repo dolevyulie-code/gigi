@@ -1870,7 +1870,7 @@ function jumpToLevel(level) {
 }
 
 function updateLevelPill() {
-  document.getElementById('level-pill').textContent = `Level ${state.level}`;
+  document.getElementById('level-pill').textContent = `Level ${state.level}/6`;
   const headersEl = document.getElementById('history-headers');
   const cfg = getLevelConfig(state.level);
   // Remove old topping header cells and rebuild for the current level
