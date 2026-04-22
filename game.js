@@ -1432,26 +1432,17 @@ function tierFor(pct) {
 function prependGuessRow(recipe, clues, isOld) {
   const container = document.getElementById('history-rows');
 
-  const { total, pct, correctToppings, n } = calculateHeatScore(recipe, state.answer);
+  const { pct } = calculateHeatScore(recipe, state.answer);
   const tier = tierFor(pct);
-  const exactAxes = ['tea', 'milk', 'syrup', 'sugar', 'ice'].filter(ax => recipe[ax] === state.answer[ax]).length;
-  const wholeScore = exactAxes + correctToppings / n;
-  const displayScore = Number.isInteger(wholeScore)
-    ? `${wholeScore}/${total}`
-    : `${wholeScore.toFixed(1)}/${total}`;
 
   const row = document.createElement('div');
   row.className = 'guess-row' + (isOld ? ' old' : '') + ` ${tier}`;
 
   const indicator = document.createElement('div');
   indicator.className = 'tier-indicator';
-  const chip = document.createElement('span');
-  chip.className = 'score-chip';
-  chip.textContent = displayScore;
   const tierLbl = document.createElement('span');
   tierLbl.className = 'tier-label';
   tierLbl.textContent = TIER_LABELS[tier];
-  indicator.appendChild(chip);
   indicator.appendChild(tierLbl);
   row.appendChild(indicator);
 
